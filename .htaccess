@@ -1,4 +1,13 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
+    RewriteBase /leo_finances/
+
+    # Serve existing files from the public directory
+    RewriteCond %{DOCUMENT_ROOT}/leo_finances/public/$1 -f
     RewriteRule ^(.*)$ public/$1 [L]
+
+    # Handle all other requests through the Laravel front controller
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ public/index.php [L,QSA]
 </IfModule>
