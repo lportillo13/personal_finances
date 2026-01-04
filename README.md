@@ -15,3 +15,8 @@ This repository is being prepared for a future PHP + MySQL personal system. Deta
 4. Copy `.env.example` to `.env` and configure `APP_KEY`, `APP_ENV`, `APP_DEBUG`, `APP_URL`, and MySQL credentials (`DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`).
 5. Run `php artisan key:generate` and `php artisan migrate`.
 6. Confirm the deployment by visiting `/health` in your browser to see `ok`.
+
+## Bluehost Subfolder Routing
+- The application is deployed under `/leo_finances/` (e.g., `https://portillosdesign.com/leo_finances/`).
+- Ensure the provided `.htaccess` files are deployed so requests route into `public/index.php`.
+- If `/leo_finances/health` still returns 404, try `/leo_finances/diag.php` and `/leo_finances/ping.txt` to confirm requests reach the `public/` folder.
