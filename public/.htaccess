@@ -5,7 +5,7 @@
     </IfModule>
 
     RewriteEngine On
-    RewriteBase /leo_finances/public/
+    RewriteBase /
 
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
