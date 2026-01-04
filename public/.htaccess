@@ -5,7 +5,9 @@
     </IfModule>
 
     RewriteEngine On
-    RewriteBase /
+    # Site is deployed in a subdirectory (e.g., https://portillosdesign.com/leo_finances/)
+    # so set the rewrite base accordingly to prevent 404s.
+    RewriteBase /leo_finances/
 
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{REQUEST_FILENAME} !-f
