@@ -1,12 +1,40 @@
 <?php
 
-use Illuminate\Support\Facades\Redirect;
+use App\Http\Controllers\AccountController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\NewPasswordController;
+use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\RecurringRuleController;
+use App\Http\Controllers\ScheduledItemController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () {
     return response('ok', 200)->header('Content-Type', 'text/plain');
 })->name('health');
 
-Route::redirect('/', '/dashboard');
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
+    Route::post('/login', [AuthenticatedSessionController::class, 'store']);
 
-Route::view('/dashboard', 'dashboard')->name('dashboard');
+    Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
+    Route::post('/register', [RegisteredUserController::class, 'store']);
+
+    Route::get('/forgot-password', [PasswordResetLinkController::class, 'create'])->name('password.request');
+    Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');
+    Route::get('/reset-password/{token}', [NewPasswordController::class, 'create'])->name('password.reset');
+    Route::post('/reset-password', [NewPasswordController::class, 'store'])->name('password.store');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::redirect('/', '/dashboard');
+    Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+
+    Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::resource('accounts', AccountController::class);
+    Route::resource('categories', CategoryController::class);
+    Route::resource('recurring-rules', RecurringRuleController::class);
+    Route::post('/scheduled-items/generate', [ScheduledItemController::class, 'generate'])->name('scheduled-items.generate');
+});
