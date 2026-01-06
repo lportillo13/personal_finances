@@ -1,8 +1,16 @@
 @extends('layouts.app')
 
+@section('title', 'Add Recurring Rule')
+
 @section('content')
-<h1 class="h4 mb-3">Add Recurring Rule</h1>
-<form method="POST" action="{{ route('recurring-rules.store') }}" class="card card-body shadow-sm">
-    @include('recurring_rules.form', ['rule' => new \App\Models\RecurringRule()])
-</form>
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h1 class="h5 mb-0">Add Recurring Rule</h1>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ route('recurring-rules.store') }}">
+            @include('recurring_rules.form', ['rule' => new \App\Models\RecurringRule()])
+        </form>
+    </div>
+</div>
 @endsection

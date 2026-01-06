@@ -1,8 +1,16 @@
 @extends('layouts.app')
 
+@section('title', 'Add Category')
+
 @section('content')
-<h1 class="h4 mb-3">Add Category</h1>
-<form method="POST" action="{{ route('categories.store') }}" class="card card-body shadow-sm">
-    @include('categories.form', ['category' => new \App\Models\Category()])
-</form>
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h1 class="h5 mb-0">Add Category</h1>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ route('categories.store') }}">
+            @include('categories.form', ['category' => new \App\Models\Category()])
+        </form>
+    </div>
+</div>
 @endsection

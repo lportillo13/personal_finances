@@ -1,8 +1,16 @@
 @extends('layouts.app')
 
+@section('title', 'Add Credit Card')
+
 @section('content')
-<h1 class="h4 mb-3">Add Credit Card</h1>
-<form method="POST" action="{{ route('credit-cards.store') }}" class="card card-body shadow-sm">
-    @include('credit_cards.form', ['creditCard' => new \App\Models\CreditCard()])
-</form>
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h1 class="h5 mb-0">Add Credit Card</h1>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ route('credit-cards.store') }}">
+            @include('credit_cards.form', ['creditCard' => new \App\Models\CreditCard()])
+        </form>
+    </div>
+</div>
 @endsection
