@@ -44,12 +44,14 @@ class AccountController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'type' => ['required', 'in:income,cash,credit_card'],
             'currency' => ['nullable', 'string', 'size:3'],
+            'current_amount' => ['nullable', 'numeric', 'min:0'],
             'is_active' => ['nullable', 'boolean'],
             'is_funding' => ['nullable', 'boolean'],
         ]);
 
         $data['user_id'] = $request->user()->id;
         $data['currency'] = $data['currency'] ?? 'USD';
+        $data['current_amount'] = $data['current_amount'] ?? null;
         $data['is_active'] = $request->boolean('is_active', true);
         $data['is_funding'] = $request->boolean('is_funding', false);
 
@@ -77,11 +79,13 @@ class AccountController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'type' => ['required', 'in:income,cash,credit_card'],
             'currency' => ['nullable', 'string', 'size:3'],
+            'current_amount' => ['nullable', 'numeric', 'min:0'],
             'is_active' => ['nullable', 'boolean'],
             'is_funding' => ['nullable', 'boolean'],
         ]);
 
         $data['currency'] = $data['currency'] ?? 'USD';
+        $data['current_amount'] = $data['current_amount'] ?? null;
         $data['is_active'] = $request->boolean('is_active', true);
         $data['is_funding'] = $request->boolean('is_funding', false);
 

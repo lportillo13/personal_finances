@@ -118,6 +118,8 @@ class CreditCardController extends Controller
     {
         $data = $this->validatedData($request);
 
+        $data['current_amount'] = $data['current_amount'] ?? null;
+
         $account = Account::create([
             'user_id' => $request->user()->id,
             'name' => $data['account_name'],
@@ -157,6 +159,8 @@ class CreditCardController extends Controller
         $this->authorizeCard($creditCard, $request);
 
         $data = $this->validatedData($request);
+
+        $data['current_amount'] = $data['current_amount'] ?? null;
 
         $this->validateFundingAccounts($request, $data);
         $data['autopay_enabled'] = $request->boolean('autopay_enabled');
@@ -354,6 +358,7 @@ class CreditCardController extends Controller
             'payment_due_day' => ['nullable', 'integer', 'between:1,31'],
             'statement_close_day' => ['nullable', 'integer', 'between:1,31'],
             'minimum_payment' => ['nullable', 'numeric', 'min:0'],
+            'current_amount' => ['nullable', 'numeric', 'min:0'],
             'autopay_enabled' => ['nullable', 'boolean'],
             'autopay_mode' => ['nullable', Rule::in(['minimum', 'statement', 'fixed'])],
             'autopay_fixed_amount' => ['nullable', 'numeric', 'min:0'],

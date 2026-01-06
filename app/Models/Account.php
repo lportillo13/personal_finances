@@ -17,6 +17,7 @@ class Account extends Model
         'name',
         'type',
         'currency',
+        'current_amount',
         'is_active',
         'is_funding',
     ];
@@ -24,6 +25,7 @@ class Account extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'is_funding' => 'boolean',
+        'current_amount' => 'decimal:2',
     ];
 
     public function user(): BelongsTo

@@ -27,6 +27,20 @@
             <div class="invalid-feedback d-block">{{ $message }}</div>
         @enderror
     </div>
+    <div class="col-md-6">
+        <label class="form-label" for="current_amount">Current Amount</label>
+        <input
+            type="number"
+            step="0.01"
+            id="current_amount"
+            name="current_amount"
+            class="form-control @error('current_amount') is-invalid @enderror"
+            value="{{ old('current_amount', $account->current_amount ?? '') }}"
+        >
+        @error('current_amount')
+            <div class="invalid-feedback d-block">{{ $message }}</div>
+        @enderror
+    </div>
 </div>
 <div class="row g-3 mt-1">
     <div class="col-md-6">

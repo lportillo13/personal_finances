@@ -18,6 +18,7 @@ class CreditCard extends Model
         'payment_due_day',
         'statement_close_day',
         'minimum_payment',
+        'current_amount',
         'autopay_enabled',
         'autopay_mode',
         'autopay_fixed_amount',
@@ -29,6 +30,7 @@ class CreditCard extends Model
     protected $casts = [
         'autopay_enabled' => 'boolean',
         'minimum_payment' => 'decimal:2',
+        'current_amount' => 'decimal:2',
         'autopay_fixed_amount' => 'decimal:2',
     ];
 
