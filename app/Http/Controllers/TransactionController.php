@@ -108,6 +108,13 @@ class TransactionController extends Controller
             }
             $validated['to_account_id'] = null;
             $validated['account_id'] = null;
+
+            $fromAccount = $accountsById->get((int) $validated['from_account_id']);
+            if ($fromAccount?->type === 'credit_card') {
+                $validated['type'] = 'credit_charge';
+                $validated['account_id'] = $validated['from_account_id'];
+                $validated['from_account_id'] = null;
+            }
         } elseif ($type === 'transfer') {
             if (empty($validated['from_account_id']) || empty($validated['to_account_id'])) {
                 return back()->withInput()->withErrors(['to_account_id' => 'Transfers need both source and destination accounts.']);
@@ -198,5 +205,20 @@ class TransactionController extends Controller
 
         return redirect()->route('transactions.index', $request->only(['month', 'account_id', 'reconciled']))
             ->with('success', $message);
+    }
+
+    public function destroy(Request $request, Transaction $transaction): RedirectResponse
+    {
+        abort_if($transaction->user_id !== $request->user()->id, 403);
+
+        if ($this->monthLockService->isLocked($request->user(), $transaction->date)) {
+            return back()->with('error', 'This month is locked. Unlock it to delete transactions.');
+        }
+
+        $transaction->delete();
+
+        return redirect()
+            ->route('transactions.index', $request->only(['month', 'account_id', 'reconciled']))
+            ->with('success', 'Transaction deleted.');
     }
 }
