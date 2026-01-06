@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use App\Models\SavingsBucket;
 
 class ScheduledItem extends Model
 {
@@ -69,8 +70,13 @@ class ScheduledItem extends Model
         return $this->hasMany(Allocation::class, 'income_scheduled_item_id');
     }
 
-    public function allocationAsExpense(): HasOne
+    public function allocationsAsExpense(): HasMany
     {
-        return $this->hasOne(Allocation::class, 'expense_scheduled_item_id');
+        return $this->hasMany(Allocation::class, 'expense_scheduled_item_id');
+    }
+
+    public function savingsBucket(): HasOne
+    {
+        return $this->hasOne(SavingsBucket::class, 'income_scheduled_item_id');
     }
 }

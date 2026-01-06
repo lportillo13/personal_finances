@@ -2,7 +2,9 @@
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\AllocationController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\CreditCardController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PayPeriodController;
@@ -36,6 +38,12 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/pay-periods', [PayPeriodController::class, 'index'])->name('pay-periods.index');
     Route::post('/pay-periods/allocate', [PayPeriodController::class, 'allocate'])->name('pay-periods.allocate');
+    Route::post('/pay-periods/{income}/savings', [PayPeriodController::class, 'saveSavings'])->name('pay-periods.savings');
+    Route::post('/allocations/reassign', [AllocationController::class, 'reassign'])->name('allocations.reassign');
+    Route::post('/allocations/split', [AllocationController::class, 'split'])->name('allocations.split');
+
+    Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
+    Route::get('/calendar/day', [CalendarController::class, 'day'])->name('calendar.day');
 
     Route::post('/schedule/generate', [ScheduleController::class, 'generate'])->name('schedule.generate');
 });
