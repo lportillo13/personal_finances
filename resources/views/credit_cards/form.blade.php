@@ -1,14 +1,30 @@
 @csrf
 <div class="row g-3">
     <div class="col-md-6">
-        <label class="form-label" for="account_id">Credit Card Account</label>
-        <select name="account_id" id="account_id" class="form-select @error('account_id') is-invalid @enderror" required>
-            <option value="">Select account</option>
-            @foreach ($accounts as $account)
-                <option value="{{ $account->id }}" @selected(old('account_id', $creditCard->account_id ?? '') == $account->id)>{{ $account->name }}</option>
-            @endforeach
-        </select>
-        @error('account_id')
+        <label class="form-label" for="account_name">Card Name</label>
+        <input
+            type="text"
+            name="account_name"
+            id="account_name"
+            class="form-control @error('account_name') is-invalid @enderror"
+            value="{{ old('account_name', optional($creditCard->account)->name ?? '') }}"
+            required
+        >
+        @error('account_name')
+            <div class="invalid-feedback d-block">{{ $message }}</div>
+        @enderror
+    </div>
+    <div class="col-md-6">
+        <label class="form-label" for="currency">Currency</label>
+        <input
+            type="text"
+            name="currency"
+            id="currency"
+            maxlength="3"
+            class="form-control @error('currency') is-invalid @enderror"
+            value="{{ old('currency', optional($creditCard->account)->currency ?? 'USD') }}"
+        >
+        @error('currency')
             <div class="invalid-feedback d-block">{{ $message }}</div>
         @enderror
     </div>

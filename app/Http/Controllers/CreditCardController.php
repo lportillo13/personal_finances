@@ -106,27 +106,29 @@ class CreditCardController extends Controller
 
     public function create(Request $request): View
     {
-        $accounts = Account::where('user_id', $request->user()->id)
-            ->where('type', 'credit_card')
-            ->doesntHave('creditCard')
-            ->orderBy('name')
-            ->get();
         $payFromAccounts = Account::where('user_id', $request->user()->id)
             ->whereIn('type', ['income', 'cash'])
             ->orderBy('name')
             ->get();
 
-        return view('credit_cards.create', compact('accounts', 'payFromAccounts'));
+        return view('credit_cards.create', compact('payFromAccounts'));
     }
 
     public function store(Request $request): RedirectResponse
     {
         $data = $this->validatedData($request);
 
-        $account = Account::where('id', $data['account_id'])
-            ->where('user_id', $request->user()->id)
-            ->where('type', 'credit_card')
-            ->firstOrFail();
+        $account = Account::create([
+            'user_id' => $request->user()->id,
+            'name' => $data['account_name'],
+            'type' => 'credit_card',
+            'currency' => $data['currency'] ?? 'USD',
+            'is_active' => true,
+            'is_funding' => false,
+        ]);
+
+        $data['account_id'] = $account->id;
+        unset($data['account_name'], $data['currency']);
 
         $this->validateFundingAccounts($request, $data);
         $data['autopay_enabled'] = $request->boolean('autopay_enabled');
@@ -140,20 +142,14 @@ class CreditCardController extends Controller
     {
         $this->authorizeCard($creditCard, $request);
 
-        $accounts = Account::where('user_id', $request->user()->id)
-            ->where('type', 'credit_card')
-            ->where(function ($query) use ($creditCard) {
-                $query->whereDoesntHave('creditCard')->orWhere('id', $creditCard->account_id);
-            })
-            ->orderBy('name')
-            ->get();
-
         $payFromAccounts = Account::where('user_id', $request->user()->id)
             ->whereIn('type', ['income', 'cash'])
             ->orderBy('name')
             ->get();
 
-        return view('credit_cards.edit', compact('creditCard', 'accounts', 'payFromAccounts'));
+        $creditCard->load('account');
+
+        return view('credit_cards.edit', compact('creditCard', 'payFromAccounts'));
     }
 
     public function update(Request $request, CreditCard $creditCard): RedirectResponse
@@ -162,13 +158,16 @@ class CreditCardController extends Controller
 
         $data = $this->validatedData($request);
 
-        Account::where('id', $data['account_id'])
-            ->where('user_id', $request->user()->id)
-            ->where('type', 'credit_card')
-            ->firstOrFail();
-
         $this->validateFundingAccounts($request, $data);
         $data['autopay_enabled'] = $request->boolean('autopay_enabled');
+
+        $creditCard->account->update([
+            'name' => $data['account_name'],
+            'currency' => $data['currency'] ?? $creditCard->account->currency ?? 'USD',
+        ]);
+
+        $data['account_id'] = $creditCard->account_id;
+        unset($data['account_name'], $data['currency']);
 
         $creditCard->update($data);
 
@@ -347,7 +346,8 @@ class CreditCardController extends Controller
     protected function validatedData(Request $request): array
     {
         return $request->validate([
-            'account_id' => ['required', 'integer', 'exists:accounts,id'],
+            'account_name' => ['required', 'string', 'max:255'],
+            'currency' => ['nullable', 'string', 'size:3'],
             'issuer_name' => ['nullable', 'string', 'max:255'],
             'last4' => ['nullable', 'string', 'size:4'],
             'due_day' => ['required', 'integer', 'between:1,31'],
