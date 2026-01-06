@@ -36,6 +36,18 @@ class DashboardController extends Controller
         $incomeTotal = (clone $totalsQuery)->where('kind', 'income')->sum('amount');
         $expenseTotal = (clone $totalsQuery)->where('kind', 'expense')->sum('amount');
 
+        $nextPaycheck = ScheduledItem::where('user_id', $user->id)
+            ->where('date', '>=', $start)
+            ->where(function ($query) {
+                $query->where('kind', 'income')
+                    ->orWhereHas('category', fn ($category) => $category->where('kind', 'income'));
+            })
+            ->with('allocationsAsIncome')
+            ->orderBy('date')
+            ->first();
+
+        $nextPaycheckAllocated = $nextPaycheck?->allocationsAsIncome->sum('allocated_amount') ?? 0;
+
         return view('dashboard', [
             'groupedItems' => $items,
             'incomeTotal' => $incomeTotal,
@@ -43,6 +55,9 @@ class DashboardController extends Controller
             'netTotal' => $incomeTotal - $expenseTotal,
             'start' => $start,
             'end' => $end,
+            'nextPaycheck' => $nextPaycheck,
+            'nextPaycheckAllocated' => $nextPaycheckAllocated,
+            'nextPaycheckFree' => $nextPaycheck ? $nextPaycheck->amount - $nextPaycheckAllocated : null,
         ]);
     }
 }
