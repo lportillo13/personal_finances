@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CreditCardController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\PayPeriodController;
 use App\Http\Controllers\RecurringRuleController;
 use App\Http\Controllers\ScheduleController;
 use Illuminate\Support\Facades\Route;
@@ -32,6 +33,9 @@ Route::middleware('auth')->group(function () {
     Route::resource('credit-cards', CreditCardController::class)->except(['show']);
     Route::resource('categories', CategoryController::class)->except(['show']);
     Route::resource('recurring-rules', RecurringRuleController::class)->except(['show']);
+
+    Route::get('/pay-periods', [PayPeriodController::class, 'index'])->name('pay-periods.index');
+    Route::post('/pay-periods/allocate', [PayPeriodController::class, 'allocate'])->name('pay-periods.allocate');
 
     Route::post('/schedule/generate', [ScheduleController::class, 'generate'])->name('schedule.generate');
 });

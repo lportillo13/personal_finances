@@ -17,6 +17,7 @@
             @auth
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item"><a class="nav-link" href="{{ route('dashboard') }}">Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('pay-periods.index') }}">Pay Periods</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('accounts.index') }}">Accounts</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('credit-cards.index') }}">Credit Cards</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('categories.index') }}">Categories</a></li>

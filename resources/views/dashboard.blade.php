@@ -15,27 +15,51 @@
 </div>
 
 <div class="row g-3 mb-4">
-    <div class="col-md-4">
-        <div class="card shadow-sm">
+    <div class="col-lg-3 col-md-6">
+        <div class="card shadow-sm h-100">
             <div class="card-body">
                 <h5 class="card-title">Income (next 30 days)</h5>
                 <p class="display-6 text-success">${{ number_format($incomeTotal, 2) }}</p>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card shadow-sm">
+    <div class="col-lg-3 col-md-6">
+        <div class="card shadow-sm h-100">
             <div class="card-body">
                 <h5 class="card-title">Expenses (next 30 days)</h5>
                 <p class="display-6 text-danger">${{ number_format($expenseTotal, 2) }}</p>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
-        <div class="card shadow-sm">
+    <div class="col-lg-3 col-md-6">
+        <div class="card shadow-sm h-100">
             <div class="card-body">
                 <h5 class="card-title">Net</h5>
                 <p class="display-6 {{ $netTotal >= 0 ? 'text-success' : 'text-danger' }}">${{ number_format($netTotal, 2) }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-body d-flex flex-column justify-content-between">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <h5 class="card-title mb-0">Next Paycheck</h5>
+                        <small class="text-muted">{{ $nextPaycheck?->date?->toFormattedDateString() ?? 'Not scheduled' }}</small>
+                    </div>
+                    <span class="badge bg-primary-subtle text-primary">Pay Periods</span>
+                </div>
+                <div class="mb-2">
+                    <div class="text-success fw-bold h5 mb-1">
+                        @if ($nextPaycheck)
+                            ${{ number_format($nextPaycheck->amount, 2) }}
+                        @else
+                            —
+                        @endif
+                    </div>
+                    <div class="small">Free after allocations: <span class="fw-semibold {{ ($nextPaycheckFree ?? 0) >= 0 ? 'text-success' : 'text-danger' }}">${{ $nextPaycheck ? number_format($nextPaycheckFree, 2) : '—' }}</span></div>
+                </div>
+                <a href="{{ route('pay-periods.index') }}" class="btn btn-outline-primary btn-sm align-self-start">View Pay Periods</a>
             </div>
         </div>
     </div>
