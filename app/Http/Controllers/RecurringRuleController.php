@@ -58,6 +58,15 @@ class RecurringRuleController extends Controller
         return redirect()->route('recurring-rules.index')->with('status', 'Recurring rule updated.');
     }
 
+    public function destroy(RecurringRule $recurringRule): RedirectResponse
+    {
+        $this->authorizeRule($recurringRule);
+
+        $recurringRule->delete();
+
+        return redirect()->route('recurring-rules.index')->with('status', 'Recurring rule deleted.');
+    }
+
     protected function formView(RecurringRule $rule, Request $request): View
     {
         $accounts = Account::where('user_id', $request->user()->id)->orderBy('name')->get();
@@ -94,12 +103,12 @@ class RecurringRuleController extends Controller
         $data['interval'] = $data['interval'] ?? 1;
         $data['is_active'] = $request->boolean('is_active', true);
 
-        if ($data['frequency'] === 'monthly' && empty($data['monthly_day'])) {
-            abort(422, 'Monthly rules require a day of month.');
-        }
-
         if ($data['frequency'] === 'semimonthly' && empty($data['semimonthly_day_1']) && empty($data['semimonthly_day_2'])) {
             abort(422, 'Provide at least one semimonthly day.');
+        }
+
+        if (empty($data['next_run_on'])) {
+            $data['next_run_on'] = $data['start_date'];
         }
 
         $this->validateOwnership($data, $request);

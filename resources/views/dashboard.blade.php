@@ -8,7 +8,7 @@
     </div>
     <form method="POST" action="{{ route('schedule.generate') }}">
         @csrf
-        <button class="btn btn-primary">Generate schedule</button>
+        <button class="btn btn-primary">Generate Schedule (Next 90 Days)</button>
     </form>
 </div>
 

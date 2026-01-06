@@ -16,7 +16,7 @@
                 <th>Currency</th>
                 <th>Funding</th>
                 <th>Active</th>
-                <th></th>
+                <th class="text-end">Actions</th>
             </tr>
             </thead>
             <tbody>
@@ -27,7 +27,14 @@
                     <td>{{ $account->currency }}</td>
                     <td>{{ $account->is_funding ? 'Yes' : 'No' }}</td>
                     <td>{{ $account->is_active ? 'Yes' : 'No' }}</td>
-                    <td class="text-end"><a href="{{ route('accounts.edit', $account) }}" class="btn btn-sm btn-outline-primary">Edit</a></td>
+                    <td class="text-end">
+                        <a href="{{ route('accounts.edit', $account) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                        <form action="{{ route('accounts.destroy', $account) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this account?');">
+                            @csrf
+                            @method('DELETE')
+                            <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+                        </form>
+                    </td>
                 </tr>
             @empty
                 <tr><td colspan="6" class="text-center text-muted">No accounts yet.</td></tr>

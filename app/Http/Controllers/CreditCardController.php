@@ -47,12 +47,18 @@ class CreditCardController extends Controller
             'notes' => ['nullable', 'string'],
         ]);
 
-        $account = Account::where('id', $data['account_id'])->where('user_id', $request->user()->id)->firstOrFail();
+        $account = Account::where('id', $data['account_id'])
+            ->where('user_id', $request->user()->id)
+            ->where('type', 'credit_card')
+            ->firstOrFail();
 
         $data['autopay_enabled'] = $request->boolean('autopay_enabled');
 
         if (! empty($data['autopay_pay_from_account_id'])) {
-            Account::where('id', $data['autopay_pay_from_account_id'])->where('user_id', $request->user()->id)->firstOrFail();
+            Account::where('id', $data['autopay_pay_from_account_id'])
+                ->where('user_id', $request->user()->id)
+                ->whereIn('type', ['income', 'cash'])
+                ->firstOrFail();
         }
 
         CreditCard::create($data);
@@ -95,17 +101,32 @@ class CreditCardController extends Controller
             'notes' => ['nullable', 'string'],
         ]);
 
-        Account::where('id', $data['account_id'])->where('user_id', $request->user()->id)->firstOrFail();
+        Account::where('id', $data['account_id'])
+            ->where('user_id', $request->user()->id)
+            ->where('type', 'credit_card')
+            ->firstOrFail();
 
         $data['autopay_enabled'] = $request->boolean('autopay_enabled');
 
         if (! empty($data['autopay_pay_from_account_id'])) {
-            Account::where('id', $data['autopay_pay_from_account_id'])->where('user_id', $request->user()->id)->firstOrFail();
+            Account::where('id', $data['autopay_pay_from_account_id'])
+                ->where('user_id', $request->user()->id)
+                ->whereIn('type', ['income', 'cash'])
+                ->firstOrFail();
         }
 
         $creditCard->update($data);
 
         return redirect()->route('credit-cards.index')->with('status', 'Credit card updated.');
+    }
+
+    public function destroy(Request $request, CreditCard $creditCard): RedirectResponse
+    {
+        $this->authorizeCard($creditCard, $request);
+
+        $creditCard->delete();
+
+        return redirect()->route('credit-cards.index')->with('status', 'Credit card deleted.');
     }
 
     protected function authorizeCard(CreditCard $creditCard, Request $request): void

@@ -18,7 +18,7 @@ class ScheduleController extends Controller
         $start = Carbon::today();
         $end = Carbon::today()->addDays(90);
 
-        $this->generator->generateForUser($request->user()->id, $start, $end);
+        $this->generator->generateForUser($request->user(), $start, $end);
 
         return back()->with('status', 'Schedule generated (next 90 days).');
     }

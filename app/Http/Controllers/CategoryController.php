@@ -58,6 +58,15 @@ class CategoryController extends Controller
         return redirect()->route('categories.index')->with('status', 'Category updated.');
     }
 
+    public function destroy(Category $category): RedirectResponse
+    {
+        $this->authorizeCategory($category);
+
+        $category->delete();
+
+        return redirect()->route('categories.index')->with('status', 'Category deleted.');
+    }
+
     protected function authorizeCategory(Category $category): void
     {
         abort_if($category->user_id !== auth()->id(), 403);
