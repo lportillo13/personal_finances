@@ -73,7 +73,8 @@ class TransactionController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $accountIds = Account::where('user_id', $request->user()->id)->pluck('id')->all();
+        $accounts = Account::where('user_id', $request->user()->id)->get();
+        $accountIds = $accounts->pluck('id')->all();
 
         $validated = $request->validate([
             'date' => ['required', 'date'],
@@ -88,6 +89,8 @@ class TransactionController extends Controller
 
         $type = $validated['type'];
         $date = Carbon::parse($validated['date']);
+        $accountsById = $accounts->keyBy('id');
+        $fundingTypes = ['income', 'cash'];
 
         if ($this->monthLockService->isLocked($request->user(), $date)) {
             return back()->withInput()->withErrors(['date' => 'This month is locked. Unlock it to add new entries.']);
@@ -117,6 +120,13 @@ class TransactionController extends Controller
             if (empty($validated['account_id'])) {
                 return back()->withInput()->withErrors(['account_id' => 'Choose the credit card for this charge.']);
             }
+
+            $cardAccount = $accountsById->get((int) $validated['account_id']);
+
+            if (! $cardAccount || $cardAccount->type !== 'credit_card') {
+                return back()->withInput()->withErrors(['account_id' => 'Select a credit card account for this charge.']);
+            }
+
             $validated['from_account_id'] = null;
             $validated['to_account_id'] = null;
         } elseif ($type === 'credit_payment') {
@@ -126,6 +136,18 @@ class TransactionController extends Controller
             if ($validated['from_account_id'] === $validated['to_account_id']) {
                 return back()->withInput()->withErrors(['to_account_id' => 'Funding account and card must differ.']);
             }
+
+            $fundingAccount = $accountsById->get((int) $validated['from_account_id']);
+            $cardAccount = $accountsById->get((int) $validated['to_account_id']);
+
+            if (! $cardAccount || $cardAccount->type !== 'credit_card') {
+                return back()->withInput()->withErrors(['to_account_id' => 'Choose a credit card account to receive the payment.']);
+            }
+
+            if (! $fundingAccount || ! in_array($fundingAccount->type, $fundingTypes, true)) {
+                return back()->withInput()->withErrors(['from_account_id' => 'Funding account must be cash or income.']);
+            }
+
             $validated['account_id'] = null;
         } elseif ($type === 'adjustment') {
             if (empty($validated['account_id'])) {
