@@ -23,8 +23,8 @@
                             <th>Type</th>
                             <th>Name</th>
                             <th class="text-end" style="width: 15%">Amount</th>
-                            <th style="width: 20%">Status</th>
-                            <th style="width: 32%">Allocate</th>
+                            <th style="width: 26%">Payment</th>
+                            <th style="width: 26%">Allocate</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -32,12 +32,6 @@
                             @php
                                 $allocated = $item->allocationsAsExpense->sum('allocated_amount');
                                 $remaining = max(0, (float) $item->amount - $allocated);
-                                $status = 'Unallocated';
-                                if ($allocated >= (float) $item->amount) {
-                                    $status = 'Allocated';
-                                } elseif ($allocated > 0) {
-                                    $status = 'Partial';
-                                }
                                 $badgeClass = 'bg-secondary';
                                 if ($item->kind === 'income' || $item->category?->kind === 'income') {
                                     $badgeClass = 'bg-success';
@@ -57,14 +51,44 @@
                                 </td>
                                 <td class="text-end">${{ number_format($item->amount, 2) }}</td>
                                 <td>
-                                    @if ($item->kind === 'expense')
-                                        <span class="badge {{ $status === 'Allocated' ? 'bg-success' : ($status === 'Partial' ? 'bg-warning text-dark' : 'bg-secondary') }}">{{ $status }}</span>
-                                        @if ($remaining > 0)
-                                            <div class="small text-muted">Remaining: ${{ number_format($remaining, 2) }}</div>
+                                    @php
+                                        $paymentBadge = match ($item->status) {
+                                            'paid' => 'bg-success',
+                                            'skipped' => 'bg-warning text-dark',
+                                            default => 'bg-secondary',
+                                        };
+                                    @endphp
+                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                        <span class="badge {{ $paymentBadge }} text-uppercase">{{ ucfirst($item->status) }}</span>
+                                        @if ($item->paid_at)
+                                            <small class="text-muted">{{ $item->paid_at->format('M j, g:ia') }}</small>
                                         @endif
-                                    @else
-                                        —
+                                    </div>
+                                    @if ($item->actual_amount && (float) $item->actual_amount !== (float) $item->amount)
+                                        <div class="small text-muted mb-1">Actual: ${{ number_format($item->actual_amount, 2) }}</div>
                                     @endif
+                                    <form class="row g-2 align-items-center mb-2" method="POST" action="{{ route('scheduled-items.markPaid', $item) }}">
+                                        @csrf
+                                        <div class="col-auto">
+                                            <input type="number" step="0.01" min="0" name="actual_amount" value="{{ old('actual_amount', $item->actual_amount ?? $item->amount) }}" class="form-control form-control-sm" style="width: 120px;" placeholder="Amount">
+                                        </div>
+                                        <div class="col">
+                                            <input type="text" name="note" value="{{ old('note', $item->note) }}" class="form-control form-control-sm" placeholder="Note (optional)">
+                                        </div>
+                                        <div class="col-auto">
+                                            <button class="btn btn-sm btn-success">Mark Paid</button>
+                                        </div>
+                                    </form>
+                                    <div class="d-flex gap-2">
+                                        <form method="POST" action="{{ route('scheduled-items.markSkipped', $item) }}">
+                                            @csrf
+                                            <button class="btn btn-sm btn-outline-warning" type="submit">Mark Skipped</button>
+                                        </form>
+                                        <form method="POST" action="{{ route('scheduled-items.markPending', $item) }}">
+                                            @csrf
+                                            <button class="btn btn-sm btn-outline-secondary" type="submit">Pending</button>
+                                        </form>
+                                    </div>
                                 </td>
                                 <td>
                                     @if ($item->kind === 'expense' && $remaining > 0)

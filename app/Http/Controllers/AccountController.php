@@ -4,17 +4,33 @@ namespace App\Http\Controllers;
 
 use App\Models\Account;
 use App\Models\ScheduledItem;
+use App\Services\LedgerService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class AccountController extends Controller
 {
+    public function __construct(private LedgerService $ledgerService)
+    {
+    }
+
     public function index(Request $request): View
     {
         $accounts = Account::where('user_id', $request->user()->id)->orderBy('name')->get();
 
-        return view('accounts.index', compact('accounts'));
+        $balances = $accounts->mapWithKeys(function (Account $account) {
+            $balance = $account->type === 'credit_card'
+                ? $this->ledgerService->computeCreditCardBalance($account)
+                : $this->ledgerService->computeAccountBalance($account);
+
+            return [$account->id => $balance];
+        });
+
+        return view('accounts.index', [
+            'accounts' => $accounts,
+            'balances' => $balances,
+        ]);
     }
 
     public function create(): View
