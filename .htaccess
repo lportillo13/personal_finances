@@ -1,13 +1,13 @@
 <IfModule mod_rewrite.c>
+    DirectoryIndex index.php
     RewriteEngine On
     RewriteBase /leo_finances/
 
-    # Serve existing files from the public directory
-    RewriteCond %{DOCUMENT_ROOT}/leo_finances/public/$1 -f
-    RewriteRule ^(.*)$ public/$1 [L]
+    # Allow direct access to assets already in public/
+    RewriteRule ^public/ - [L]
 
-    # Handle all other requests through the Laravel front controller
+    # Send everything else through the front controller
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
-    RewriteRule ^(.*)$ public/index.php [L,QSA]
+    RewriteRule ^ index.php [L]
 </IfModule>
