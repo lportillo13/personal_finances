@@ -25,14 +25,17 @@ class ScheduledItem extends Model
         'target_account_id',
         'category_id',
         'status',
-        'posted_at',
+        'paid_at',
+        'actual_amount',
+        'note',
         'notes',
     ];
 
     protected $casts = [
         'date' => 'date',
         'amount' => 'decimal:2',
-        'posted_at' => 'datetime',
+        'actual_amount' => 'decimal:2',
+        'paid_at' => 'datetime',
     ];
 
     public function user(): BelongsTo
@@ -78,5 +81,10 @@ class ScheduledItem extends Model
     public function savingsBucket(): HasOne
     {
         return $this->hasOne(SavingsBucket::class, 'income_scheduled_item_id');
+    }
+
+    public function transaction(): HasOne
+    {
+        return $this->hasOne(Transaction::class);
     }
 }

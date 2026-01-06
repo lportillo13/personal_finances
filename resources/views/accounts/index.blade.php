@@ -16,6 +16,7 @@
                 <th>Name</th>
                 <th>Type</th>
                 <th>Currency</th>
+                <th class="text-end">Balance</th>
                 <th>Funding</th>
                 <th>Active</th>
                 <th class="text-end">Actions</th>
@@ -27,6 +28,17 @@
                     <td>{{ $account->name }}</td>
                     <td class="text-capitalize">{{ str_replace('_', ' ', $account->type) }}</td>
                     <td>{{ $account->currency }}</td>
+                    <td class="text-end">
+                        @php
+                            $balance = $balances[$account->id] ?? 0;
+                        @endphp
+                        @if ($account->type === 'credit_card')
+                            <span class="text-danger">${{ number_format($balance, 2) }}</span>
+                            <div class="small text-muted">Owed</div>
+                        @else
+                            <span class="text-{{ $balance >= 0 ? 'success' : 'danger' }}">${{ number_format($balance, 2) }}</span>
+                        @endif
+                    </td>
                     <td>
                         @if ($account->is_funding)
                             <span class="badge bg-success">Funding</span>
@@ -48,7 +60,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="6" class="text-center text-muted">No accounts yet.</td></tr>
+                <tr><td colspan="7" class="text-center text-muted">No accounts yet.</td></tr>
             @endforelse
             </tbody>
         </table>

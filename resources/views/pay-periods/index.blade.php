@@ -155,6 +155,26 @@
                                         @if ($expense->category)
                                             <span class="badge rounded-pill" style="background-color: {{ $expense->category->color ?? '#6c757d' }}">{{ $expense->category->name }}</span>
                                         @endif
+                                        @php
+                                            $statusClass = match ($expense->status) {
+                                                'paid' => 'bg-success',
+                                                'skipped' => 'bg-warning text-dark',
+                                                default => 'bg-secondary',
+                                            };
+                                        @endphp
+                                        <div class="d-flex align-items-center gap-2 mt-1 flex-wrap">
+                                            <span class="badge {{ $statusClass }} text-uppercase">{{ ucfirst($expense->status ?? 'pending') }}</span>
+                                            @if ($expense->paid_at)
+                                                <small class="text-muted">Paid {{ $expense->paid_at->toFormattedDateString() }}</small>
+                                            @endif
+                                            @if (($expense->status ?? 'pending') !== 'paid' && optional($expense->date)->lte(now()))
+                                                <form method="POST" action="{{ route('scheduled-items.markPaid', $expense) }}" class="d-inline-flex gap-1 align-items-center">
+                                                    @csrf
+                                                    <input type="hidden" name="actual_amount" value="{{ $expense->actual_amount ?? $expense->amount }}">
+                                                    <button class="btn btn-sm btn-outline-success">Mark Paid</button>
+                                                </form>
+                                            @endif
+                                        </div>
                                     </td>
                                     <td>{{ $expense->account?->name ?? '—' }}</td>
                                     <td class="text-end text-danger">${{ number_format($allocation->allocated_amount, 2) }}</td>
@@ -254,6 +274,26 @@
                                     @if ($expense->category)
                                         <span class="badge rounded-pill" style="background-color: {{ $expense->category->color ?? '#6c757d' }}">{{ $expense->category->name }}</span>
                                     @endif
+                                    @php
+                                        $statusClass = match ($expense->status) {
+                                            'paid' => 'bg-success',
+                                            'skipped' => 'bg-warning text-dark',
+                                            default => 'bg-secondary',
+                                        };
+                                    @endphp
+                                    <div class="d-flex align-items-center gap-2 mt-1 flex-wrap">
+                                        <span class="badge {{ $statusClass }} text-uppercase">{{ ucfirst($expense->status ?? 'pending') }}</span>
+                                        @if ($expense->paid_at)
+                                            <small class="text-muted">Paid {{ $expense->paid_at->toFormattedDateString() }}</small>
+                                        @endif
+                                        @if (($expense->status ?? 'pending') !== 'paid' && optional($expense->date)->lte(now()))
+                                            <form method="POST" action="{{ route('scheduled-items.markPaid', $expense) }}" class="d-inline-flex gap-1 align-items-center">
+                                                @csrf
+                                                <input type="hidden" name="actual_amount" value="{{ $expense->actual_amount ?? $expense->amount }}">
+                                                <button class="btn btn-sm btn-outline-success">Mark Paid</button>
+                                            </form>
+                                        @endif
+                                    </div>
                                 </td>
                                 <td>{{ $expense->account?->name ?? '—' }}</td>
                                 <td class="text-end text-danger">${{ number_format($remaining, 2) }}</td>

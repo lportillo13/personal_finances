@@ -9,7 +9,9 @@ use App\Http\Controllers\CreditCardController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PayPeriodController;
 use App\Http\Controllers\RecurringRuleController;
+use App\Http\Controllers\ScheduledItemStatusController;
 use App\Http\Controllers\ScheduleController;
+use App\Http\Controllers\TransactionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health', function () {
@@ -44,6 +46,14 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/calendar', [CalendarController::class, 'index'])->name('calendar.index');
     Route::get('/calendar/day', [CalendarController::class, 'day'])->name('calendar.day');
+
+    Route::post('/scheduled-items/{scheduledItem}/mark-paid', [ScheduledItemStatusController::class, 'markPaid'])->name('scheduled-items.markPaid');
+    Route::post('/scheduled-items/{scheduledItem}/mark-skipped', [ScheduledItemStatusController::class, 'markSkipped'])->name('scheduled-items.markSkipped');
+    Route::post('/scheduled-items/{scheduledItem}/mark-pending', [ScheduledItemStatusController::class, 'markPending'])->name('scheduled-items.markPending');
+
+    Route::get('/transactions', [TransactionController::class, 'index'])->name('transactions.index');
+    Route::get('/transactions/create', [TransactionController::class, 'create'])->name('transactions.create');
+    Route::post('/transactions', [TransactionController::class, 'store'])->name('transactions.store');
 
     Route::post('/schedule/generate', [ScheduleController::class, 'generate'])->name('schedule.generate');
 });

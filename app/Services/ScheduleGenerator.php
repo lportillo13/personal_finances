@@ -42,7 +42,7 @@ class ScheduleGenerator
                     'source_account_id' => $rule->source_account_id,
                     'target_account_id' => $rule->target_account_id,
                     'category_id' => $rule->category_id,
-                    'status' => 'planned',
+                    'status' => 'pending',
                 ]);
 
                 if ($item->wasRecentlyCreated) {
