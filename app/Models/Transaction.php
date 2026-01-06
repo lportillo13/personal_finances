@@ -21,11 +21,15 @@ class Transaction extends Model
         'account_id',
         'scheduled_item_id',
         'memo',
+        'statement_period_start',
+        'statement_period_end',
     ];
 
     protected $casts = [
         'date' => 'date',
         'amount' => 'decimal:2',
+        'statement_period_start' => 'date',
+        'statement_period_end' => 'date',
     ];
 
     public function user(): BelongsTo
