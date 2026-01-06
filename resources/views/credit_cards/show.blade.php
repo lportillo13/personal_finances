@@ -62,14 +62,6 @@
             <dd class="col-sm-8">{{ $creditCard->statement_close_day ?? 'n/a' }}</dd>
             <dt class="col-sm-4">Payment Due Day</dt>
             <dd class="col-sm-8">{{ $creditCard->payment_due_day ?? $creditCard->due_day }}</dd>
-            <dt class="col-sm-4">Current Amount</dt>
-            <dd class="col-sm-8">
-                @if(! is_null($creditCard->current_amount))
-                    ${{ number_format($creditCard->current_amount, 2) }}
-                @else
-                    <span class="text-muted">—</span>
-                @endif
-            </dd>
             <dt class="col-sm-4">Default Funding</dt>
             <dd class="col-sm-8">{{ $creditCard->defaultFundingAccount?->name ?? 'Not set' }}</dd>
             <dt class="col-sm-4">Autopay</dt>
