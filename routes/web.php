@@ -27,6 +27,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
     Route::resource('accounts', AccountController::class)->except(['show']);
+    Route::post('/accounts/{account}/set-funding', [AccountController::class, 'setFunding'])
+        ->name('accounts.setFunding');
     Route::resource('credit-cards', CreditCardController::class)->except(['show']);
     Route::resource('categories', CategoryController::class)->except(['show']);
     Route::resource('recurring-rules', RecurringRuleController::class)->except(['show']);

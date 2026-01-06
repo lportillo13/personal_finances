@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Account;
+use App\Models\ScheduledItem;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -81,9 +82,39 @@ class AccountController extends Controller
     {
         $this->authorizeAccount($account);
 
+        if ($account->creditCard()->exists()) {
+            return redirect()
+                ->route('accounts.index')
+                ->with('error', 'Cannot delete an account that has a linked credit card.');
+        }
+
+        $hasScheduled = ScheduledItem::where('user_id', $account->user_id)
+            ->where(function ($query) use ($account) {
+                $query->where('account_id', $account->id)
+                    ->orWhere('source_account_id', $account->id)
+                    ->orWhere('target_account_id', $account->id);
+            })
+            ->exists();
+
+        if ($hasScheduled) {
+            return redirect()
+                ->route('accounts.index')
+                ->with('error', 'Cannot delete an account that has scheduled items.');
+        }
+
         $account->delete();
 
         return redirect()->route('accounts.index')->with('status', 'Account deleted.');
+    }
+
+    public function setFunding(Account $account, Request $request): RedirectResponse
+    {
+        $this->authorizeAccount($account);
+
+        Account::where('user_id', $account->user_id)->update(['is_funding' => false]);
+        $account->update(['is_funding' => true]);
+
+        return redirect()->route('accounts.index')->with('status', 'Funding account updated.');
     }
 
     protected function authorizeAccount(Account $account): void
