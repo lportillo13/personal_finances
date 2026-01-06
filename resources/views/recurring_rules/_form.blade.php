@@ -26,7 +26,8 @@
         @enderror
     </div>
 </div>
-<div class="row g-3 mt-1">
+
+<div class="row g-3">
     <div class="col-md-3">
         <label class="form-label" for="currency">Currency</label>
         <input type="text" id="currency" name="currency" class="form-control @error('currency') is-invalid @enderror" value="{{ old('currency', $rule->currency ?? 'USD') }}" maxlength="3">
@@ -34,7 +35,7 @@
             <div class="invalid-feedback d-block">{{ $message }}</div>
         @enderror
     </div>
-    <div class="col-md-3">
+    <div class="col-md-4">
         <label class="form-label" for="account_id">Account</label>
         <select name="account_id" id="account_id" class="form-select @error('account_id') is-invalid @enderror">
             <option value="">Select</option>
@@ -46,7 +47,22 @@
             <div class="invalid-feedback d-block">{{ $message }}</div>
         @enderror
     </div>
-    <div class="col-md-3">
+    <div class="col-md-5">
+        <label class="form-label" for="category_id">Category</label>
+        <select name="category_id" id="category_id" class="form-select @error('category_id') is-invalid @enderror">
+            <option value="">Select</option>
+            @foreach ($categories as $category)
+                <option value="{{ $category->id }}" @selected(old('category_id', $rule->category_id ?? '') == $category->id)>{{ $category->name }}</option>
+            @endforeach
+        </select>
+        @error('category_id')
+            <div class="invalid-feedback d-block">{{ $message }}</div>
+        @enderror
+    </div>
+</div>
+
+<div class="row g-3 kind-transfer d-none">
+    <div class="col-md-6">
         <label class="form-label" for="source_account_id">Source Account</label>
         <select name="source_account_id" id="source_account_id" class="form-select @error('source_account_id') is-invalid @enderror">
             <option value="">Select</option>
@@ -58,7 +74,7 @@
             <div class="invalid-feedback d-block">{{ $message }}</div>
         @enderror
     </div>
-    <div class="col-md-3">
+    <div class="col-md-6">
         <label class="form-label" for="target_account_id">Target Account</label>
         <select name="target_account_id" id="target_account_id" class="form-select @error('target_account_id') is-invalid @enderror">
             <option value="">Select</option>
@@ -71,19 +87,8 @@
         @enderror
     </div>
 </div>
-<div class="row g-3 mt-1">
-    <div class="col-md-4">
-        <label class="form-label" for="category_id">Category</label>
-        <select name="category_id" id="category_id" class="form-select @error('category_id') is-invalid @enderror">
-            <option value="">Select</option>
-            @foreach ($categories as $category)
-                <option value="{{ $category->id }}" @selected(old('category_id', $rule->category_id ?? '') == $category->id)>{{ $category->name }}</option>
-            @endforeach
-        </select>
-        @error('category_id')
-            <div class="invalid-feedback d-block">{{ $message }}</div>
-        @enderror
-    </div>
+
+<div class="row g-3">
     <div class="col-md-4">
         <label class="form-label" for="frequency">Frequency</label>
         <select name="frequency" id="frequency" class="form-select @error('frequency') is-invalid @enderror" required>
@@ -102,9 +107,7 @@
             <div class="invalid-feedback d-block">{{ $message }}</div>
         @enderror
     </div>
-</div>
-<div class="row g-3 mt-1" id="monthly-day-group">
-    <div class="col-md-4">
+    <div class="col-md-4 freq-monthly d-none">
         <label class="form-label" for="monthly_day">Monthly Day</label>
         <input type="number" name="monthly_day" id="monthly_day" min="1" max="31" class="form-control @error('monthly_day') is-invalid @enderror" value="{{ old('monthly_day', $rule->monthly_day ?? '') }}">
         @error('monthly_day')
@@ -112,15 +115,16 @@
         @enderror
     </div>
 </div>
-<div class="row g-3 mt-1" id="semimonthly-day-group">
-    <div class="col-md-4">
+
+<div class="row g-3 freq-semimonthly d-none">
+    <div class="col-md-6">
         <label class="form-label" for="semimonthly_day_1">Semimonthly Day 1</label>
         <input type="number" name="semimonthly_day_1" id="semimonthly_day_1" min="1" max="31" class="form-control @error('semimonthly_day_1') is-invalid @enderror" value="{{ old('semimonthly_day_1', $rule->semimonthly_day_1 ?? '') }}">
         @error('semimonthly_day_1')
             <div class="invalid-feedback d-block">{{ $message }}</div>
         @enderror
     </div>
-    <div class="col-md-4">
+    <div class="col-md-6">
         <label class="form-label" for="semimonthly_day_2">Semimonthly Day 2</label>
         <input type="number" name="semimonthly_day_2" id="semimonthly_day_2" min="1" max="31" class="form-control @error('semimonthly_day_2') is-invalid @enderror" value="{{ old('semimonthly_day_2', $rule->semimonthly_day_2 ?? '') }}">
         @error('semimonthly_day_2')
@@ -128,7 +132,8 @@
         @enderror
     </div>
 </div>
-<div class="row g-3 mt-1">
+
+<div class="row g-3">
     <div class="col-md-4">
         <label class="form-label" for="start_date">Start Date</label>
         <input type="date" name="start_date" id="start_date" class="form-control @error('start_date') is-invalid @enderror" value="{{ old('start_date', optional($rule->start_date)->toDateString()) }}" required>
@@ -151,7 +156,8 @@
         @enderror
     </div>
 </div>
-<div class="row g-3 mt-1">
+
+<div class="row g-3">
     <div class="col-md-6">
         <label class="form-label" for="occurrences_total">Occurrences Total</label>
         <input type="number" name="occurrences_total" id="occurrences_total" min="1" class="form-control @error('occurrences_total') is-invalid @enderror" value="{{ old('occurrences_total', $rule->occurrences_total ?? '') }}">
@@ -167,6 +173,7 @@
         @enderror
     </div>
 </div>
+
 <div class="form-check mt-3">
     <input type="checkbox" name="is_active" class="form-check-input @error('is_active') is-invalid @enderror" id="is_active" value="1" @checked(old('is_active', $rule->is_active ?? true))>
     <label for="is_active" class="form-check-label">Active</label>
@@ -174,25 +181,31 @@
         <div class="invalid-feedback d-block">{{ $message }}</div>
     @enderror
 </div>
-<div class="mt-3 d-flex gap-2">
-    <button class="btn btn-primary" type="submit">Save</button>
-    <a href="{{ route('recurring-rules.index') }}" class="btn btn-outline-secondary">Cancel</a>
-</div>
 
 @push('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        const kind = document.getElementById('kind');
         const frequency = document.getElementById('frequency');
-        const monthlyGroup = document.getElementById('monthly-day-group');
-        const semimonthlyGroup = document.getElementById('semimonthly-day-group');
+        const transferBlocks = document.querySelectorAll('.kind-transfer');
+        const monthlyBlocks = document.querySelectorAll('.freq-monthly');
+        const semimonthlyBlocks = document.querySelectorAll('.freq-semimonthly');
+
+        function toggleKindFields() {
+            const isTransfer = kind.value === 'transfer';
+            transferBlocks.forEach((block) => block.classList.toggle('d-none', !isTransfer));
+        }
 
         function toggleFrequencyFields() {
             const value = frequency.value;
-            monthlyGroup.classList.toggle('d-none', value !== 'monthly');
-            semimonthlyGroup.classList.toggle('d-none', value !== 'semimonthly');
+            monthlyBlocks.forEach((block) => block.classList.toggle('d-none', value !== 'monthly'));
+            semimonthlyBlocks.forEach((block) => block.classList.toggle('d-none', value !== 'semimonthly'));
         }
 
+        kind.addEventListener('change', toggleKindFields);
         frequency.addEventListener('change', toggleFrequencyFields);
+
+        toggleKindFields();
         toggleFrequencyFields();
     });
 </script>
