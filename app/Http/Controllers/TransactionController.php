@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Account;
+use App\Models\ScheduledItem;
 use App\Models\Transaction;
 use App\Services\MonthLockService;
 use Carbon\Carbon;
@@ -181,7 +182,24 @@ class TransactionController extends Controller
         $validated['currency'] = $validated['currency'] ?? 'USD';
         $validated['source'] = 'manual';
 
-        Transaction::create($validated);
+        $transaction = Transaction::create($validated);
+
+        if ($transaction->type === 'credit_charge' && ! $transaction->scheduled_item_id) {
+            $scheduledItem = ScheduledItem::create([
+                'user_id' => $transaction->user_id,
+                'date' => $transaction->date,
+                'kind' => 'expense',
+                'amount' => $transaction->amount,
+                'currency' => $transaction->currency ?? 'USD',
+                'account_id' => $transaction->account_id,
+                'status' => 'paid',
+                'paid_at' => Carbon::now(),
+                'actual_amount' => $transaction->amount,
+                'note' => $transaction->memo,
+            ]);
+
+            $transaction->update(['scheduled_item_id' => $scheduledItem->id]);
+        }
 
         return redirect()->route('transactions.index')->with('success', 'Transaction recorded.');
     }
