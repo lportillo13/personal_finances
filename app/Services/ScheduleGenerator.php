@@ -4,17 +4,17 @@ namespace App\Services;
 
 use App\Models\RecurringRule;
 use App\Models\ScheduledItem;
+use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 
 class ScheduleGenerator
 {
-    public function generateForUser(int $userId, $startDate, $endDate): int
+    public function generateForUser(User $user, Carbon $start, Carbon $end): int
     {
-        $start = Carbon::parse($startDate);
-        $end = Carbon::parse($endDate);
         $created = 0;
 
-        $rules = RecurringRule::where('user_id', $userId)
+        $rules = RecurringRule::where('user_id', $user->id)
             ->where('is_active', true)
             ->get();
 
@@ -53,20 +53,16 @@ class ScheduleGenerator
                 }
             }
 
-            if ($occurrences->isNotEmpty() && $end->gte($rule->next_run_on)) {
-                $nextDate = $this->nextOccurrenceAfter($rule, $occurrences->last());
-                if ($nextDate) {
-                    $rule->next_run_on = $nextDate;
-                }
-            }
+            $nextDate = $this->nextOccurrenceAfter($rule, $end);
 
+            $rule->next_run_on = $nextDate ?? $rule->next_run_on;
             $rule->save();
         }
 
         return $created;
     }
 
-    protected function buildOccurrences(RecurringRule $rule, Carbon $start, Carbon $end)
+    protected function buildOccurrences(RecurringRule $rule, Carbon $start, Carbon $end): Collection
     {
         $first = collect([
             Carbon::parse($rule->start_date),
@@ -83,7 +79,7 @@ class ScheduleGenerator
         };
     }
 
-    protected function generateWeekly(RecurringRule $rule, Carbon $start, Carbon $end, int $stepDays)
+    protected function generateWeekly(RecurringRule $rule, Carbon $start, Carbon $end, int $stepDays): Collection
     {
         $current = Carbon::parse($rule->next_run_on);
         while ($current->lt($start)) {
@@ -101,16 +97,17 @@ class ScheduleGenerator
         return $dates;
     }
 
-    protected function generateMonthly(RecurringRule $rule, Carbon $start, Carbon $end)
+    protected function generateMonthly(RecurringRule $rule, Carbon $start, Carbon $end): Collection
     {
         $dates = collect();
+        $desiredDay = $rule->monthly_day ?? Carbon::parse($rule->start_date)->day;
         $baseStart = Carbon::parse($rule->start_date)->startOfMonth();
         $currentMonth = $start->copy()->startOfMonth();
 
         while ($currentMonth->lte($end)) {
             $diff = $baseStart->diffInMonths($currentMonth);
             if ($diff % $rule->interval === 0) {
-                $day = min($rule->monthly_day, $currentMonth->daysInMonth);
+                $day = min($desiredDay, $currentMonth->daysInMonth);
                 $occurrence = $currentMonth->copy()->day($day);
                 if ($occurrence->between($start, $end) && $occurrence->gte($rule->start_date)) {
                     $dates->push($occurrence);
@@ -122,7 +119,7 @@ class ScheduleGenerator
         return $dates;
     }
 
-    protected function generateSemimonthly(RecurringRule $rule, Carbon $start, Carbon $end)
+    protected function generateSemimonthly(RecurringRule $rule, Carbon $start, Carbon $end): Collection
     {
         $dates = collect();
         $days = collect([$rule->semimonthly_day_1, $rule->semimonthly_day_2])
@@ -153,23 +150,50 @@ class ScheduleGenerator
         return $dates->sort();
     }
 
-    protected function nextOccurrenceAfter(RecurringRule $rule, Carbon $lastDate): ?string
+    protected function nextOccurrenceAfter(RecurringRule $rule, Carbon $after): ?string
     {
-        return match ($rule->frequency) {
-            'weekly' => $lastDate->copy()->addDays(7 * $rule->interval)->toDateString(),
-            'biweekly' => $lastDate->copy()->addDays(14 * $rule->interval)->toDateString(),
-            'monthly' => $this->alignMonthlyNext($rule, $lastDate),
-            'semimonthly' => $this->nextSemimonthlyDate($rule, $lastDate),
+        if ($rule->occurrences_remaining !== null && $rule->occurrences_remaining <= 0) {
+            return null;
+        }
+
+        $date = match ($rule->frequency) {
+            'weekly' => $this->advanceWeeklyAfter($rule, $after, 7 * $rule->interval),
+            'biweekly' => $this->advanceWeeklyAfter($rule, $after, 14 * $rule->interval),
+            'monthly' => $this->alignMonthlyNext($rule, $after),
+            'semimonthly' => $this->nextSemimonthlyDate($rule, $after),
             default => null,
         };
+
+        return $this->respectEndConditions($rule, $date);
     }
 
-    protected function alignMonthlyNext(RecurringRule $rule, Carbon $lastDate): string
+    protected function advanceWeeklyAfter(RecurringRule $rule, Carbon $after, int $stepDays): string
     {
-        $candidate = $lastDate->copy()->addMonths($rule->interval)->startOfMonth();
-        $day = min($rule->monthly_day, $candidate->daysInMonth);
+        $current = Carbon::parse($rule->next_run_on);
+        while ($current->lte($after)) {
+            $current->addDays($stepDays);
+        }
 
-        return $candidate->day($day)->toDateString();
+        return $current->toDateString();
+    }
+
+    protected function alignMonthlyNext(RecurringRule $rule, Carbon $after): string
+    {
+        $desiredDay = $rule->monthly_day ?? Carbon::parse($rule->start_date)->day;
+        $candidate = $after->copy()->addDay()->startOfMonth();
+        $baseStart = Carbon::parse($rule->start_date)->startOfMonth();
+
+        while (true) {
+            $diff = $baseStart->diffInMonths($candidate);
+            if ($diff % $rule->interval === 0) {
+                $day = min($desiredDay, $candidate->daysInMonth);
+                $occurrence = $candidate->copy()->day($day);
+                if ($occurrence->gt($after)) {
+                    return $occurrence->toDateString();
+                }
+            }
+            $candidate->addMonth();
+        }
     }
 
     protected function nextSemimonthlyDate(RecurringRule $rule, Carbon $after): ?string
@@ -200,5 +224,24 @@ class ScheduleGenerator
             }
             $current->addMonth()->startOfMonth();
         }
+    }
+
+    protected function respectEndConditions(RecurringRule $rule, ?string $candidate): ?string
+    {
+        if (! $candidate) {
+            return null;
+        }
+
+        $candidateDate = Carbon::parse($candidate);
+
+        if ($rule->end_date && $candidateDate->gt($rule->end_date)) {
+            return null;
+        }
+
+        if ($rule->occurrences_remaining !== null && $rule->occurrences_remaining <= 0) {
+            return null;
+        }
+
+        return $candidate;
     }
 }

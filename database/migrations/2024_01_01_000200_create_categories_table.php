@@ -15,6 +15,8 @@ return new class extends Migration
             $table->enum('kind', ['income', 'expense', 'transfer']);
             $table->string('color')->nullable();
             $table->timestamps();
+
+            $table->index(['user_id', 'kind']);
         });
     }
 

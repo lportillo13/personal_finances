@@ -77,6 +77,15 @@ class AccountController extends Controller
         return redirect()->route('accounts.index')->with('status', 'Account updated.');
     }
 
+    public function destroy(Account $account): RedirectResponse
+    {
+        $this->authorizeAccount($account);
+
+        $account->delete();
+
+        return redirect()->route('accounts.index')->with('status', 'Account deleted.');
+    }
+
     protected function authorizeAccount(Account $account): void
     {
         abort_if($account->user_id !== auth()->id(), 403);

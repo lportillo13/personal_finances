@@ -27,9 +27,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
 
     Route::resource('accounts', AccountController::class)->except(['show']);
-    Route::resource('credit-cards', CreditCardController::class)->except(['show', 'destroy']);
-    Route::resource('categories', CategoryController::class)->except(['show', 'destroy']);
-    Route::resource('recurring-rules', RecurringRuleController::class)->except(['show', 'destroy']);
+    Route::resource('credit-cards', CreditCardController::class)->except(['show']);
+    Route::resource('categories', CategoryController::class)->except(['show']);
+    Route::resource('recurring-rules', RecurringRuleController::class)->except(['show']);
 
     Route::post('/schedule/generate', [ScheduleController::class, 'generate'])->name('schedule.generate');
 });

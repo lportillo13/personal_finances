@@ -17,6 +17,9 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->boolean('is_funding')->default(false);
             $table->timestamps();
+
+            $table->index(['user_id', 'type']);
+            $table->index(['user_id', 'is_funding']);
         });
     }
 

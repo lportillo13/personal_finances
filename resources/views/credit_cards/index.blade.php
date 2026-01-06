@@ -16,7 +16,7 @@
                 <th>Last4</th>
                 <th>Due Day</th>
                 <th>Autopay</th>
-                <th></th>
+                <th class="text-end">Actions</th>
             </tr>
             </thead>
             <tbody>
@@ -27,7 +27,14 @@
                     <td>{{ $card->last4 }}</td>
                     <td>{{ $card->due_day }}</td>
                     <td>{{ $card->autopay_enabled ? 'Yes' : 'No' }}</td>
-                    <td class="text-end"><a href="{{ route('credit-cards.edit', $card) }}" class="btn btn-sm btn-outline-primary">Edit</a></td>
+                    <td class="text-end">
+                        <a href="{{ route('credit-cards.edit', $card) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                        <form action="{{ route('credit-cards.destroy', $card) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this credit card?');">
+                            @csrf
+                            @method('DELETE')
+                            <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+                        </form>
+                    </td>
                 </tr>
             @empty
                 <tr><td colspan="6" class="text-center text-muted">No credit cards yet.</td></tr>

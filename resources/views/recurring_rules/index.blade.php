@@ -17,7 +17,7 @@
                 <th>Frequency</th>
                 <th>Next Run</th>
                 <th>Status</th>
-                <th></th>
+                <th class="text-end">Actions</th>
             </tr>
             </thead>
             <tbody>
@@ -29,7 +29,14 @@
                     <td class="text-capitalize">{{ $rule->frequency }}</td>
                     <td>{{ optional($rule->next_run_on)->toDateString() }}</td>
                     <td>{{ $rule->is_active ? 'Active' : 'Paused' }}</td>
-                    <td class="text-end"><a href="{{ route('recurring-rules.edit', $rule) }}" class="btn btn-sm btn-outline-primary">Edit</a></td>
+                    <td class="text-end">
+                        <a href="{{ route('recurring-rules.edit', $rule) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                        <form action="{{ route('recurring-rules.destroy', $rule) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this rule?');">
+                            @csrf
+                            @method('DELETE')
+                            <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+                        </form>
+                    </td>
                 </tr>
             @empty
                 <tr><td colspan="7" class="text-center text-muted">No recurring rules yet.</td></tr>
