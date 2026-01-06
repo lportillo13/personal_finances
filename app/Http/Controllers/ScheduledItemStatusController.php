@@ -4,18 +4,23 @@ namespace App\Http\Controllers;
 
 use App\Models\ScheduledItem;
 use App\Services\LedgerService;
+use App\Services\MonthLockService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class ScheduledItemStatusController extends Controller
 {
-    public function __construct(private LedgerService $ledgerService)
+    public function __construct(private LedgerService $ledgerService, private MonthLockService $monthLockService)
     {
     }
 
     public function markPaid(Request $request, ScheduledItem $scheduledItem): RedirectResponse
     {
         $this->authorizeItem($request, $scheduledItem);
+
+        if ($this->monthLockService->isLocked($request->user(), $scheduledItem->date)) {
+            return back()->with('error', 'This month is locked. Unlock it to change scheduled items.');
+        }
 
         $validated = $request->validate([
             'actual_amount' => ['nullable', 'numeric', 'min:0'],
@@ -43,6 +48,10 @@ class ScheduledItemStatusController extends Controller
     {
         $this->authorizeItem($request, $scheduledItem);
 
+        if ($this->monthLockService->isLocked($request->user(), $scheduledItem->date)) {
+            return back()->with('error', 'This month is locked. Unlock it to change scheduled items.');
+        }
+
         $validated = $request->validate([
             'note' => ['nullable', 'string', 'max:255'],
         ]);
@@ -60,6 +69,10 @@ class ScheduledItemStatusController extends Controller
     public function markPending(Request $request, ScheduledItem $scheduledItem): RedirectResponse
     {
         $this->authorizeItem($request, $scheduledItem);
+
+        if ($this->monthLockService->isLocked($request->user(), $scheduledItem->date)) {
+            return back()->with('error', 'This month is locked. Unlock it to change scheduled items.');
+        }
 
         $validated = $request->validate([
             'note' => ['nullable', 'string', 'max:255'],

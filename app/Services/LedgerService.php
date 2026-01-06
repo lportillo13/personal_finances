@@ -38,6 +38,7 @@ class LedgerService
                 'currency' => $item->currency,
                 'scheduled_item_id' => $item->id,
                 'memo' => $memo,
+                'source' => 'scheduled_item',
             ];
 
             if ($item->kind === 'income') {

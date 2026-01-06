@@ -7,6 +7,8 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\CreditCardController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ImportController;
+use App\Http\Controllers\MonthLockController;
 use App\Http\Controllers\PayPeriodController;
 use App\Http\Controllers\RecurringRuleController;
 use App\Http\Controllers\ScheduledItemStatusController;
@@ -66,6 +68,16 @@ Route::middleware('auth')->group(function () {
     Route::get('/transactions', [TransactionController::class, 'index'])->name('transactions.index');
     Route::get('/transactions/create', [TransactionController::class, 'create'])->name('transactions.create');
     Route::post('/transactions', [TransactionController::class, 'store'])->name('transactions.store');
+    Route::post('/transactions/reconcile', [TransactionController::class, 'bulkReconcile'])->name('transactions.reconcile');
+
+    Route::get('/import', [ImportController::class, 'index'])->name('import.index');
+    Route::post('/import/preview', [ImportController::class, 'preview'])->name('import.preview');
+    Route::post('/import/commit', [ImportController::class, 'commit'])->name('import.commit');
+
+    Route::get('/settings/locks', [MonthLockController::class, 'index'])->name('locks.index');
+    Route::post('/settings/locks', [MonthLockController::class, 'store'])->name('locks.store');
+    Route::post('/settings/locks/lock-last', [MonthLockController::class, 'lockLast'])->name('locks.lockLast');
+    Route::delete('/settings/locks/{lock}', [MonthLockController::class, 'destroy'])->name('locks.destroy');
 
     Route::post('/schedule/generate', [ScheduleController::class, 'generate'])->name('schedule.generate');
 });

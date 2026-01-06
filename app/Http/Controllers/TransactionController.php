@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Account;
 use App\Models\Transaction;
+use App\Services\MonthLockService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -12,6 +13,10 @@ use Illuminate\View\View;
 
 class TransactionController extends Controller
 {
+    public function __construct(private MonthLockService $monthLockService)
+    {
+    }
+
     public function index(Request $request): View
     {
         $user = $request->user();
@@ -20,6 +25,7 @@ class TransactionController extends Controller
         $end = $start->copy()->endOfMonth();
         $accounts = Account::where('user_id', $user->id)->orderBy('name')->get();
         $accountId = $accounts->firstWhere('id', (int) $request->input('account_id'))?->id;
+        $reconciledFilter = $request->input('reconciled');
 
         $transactions = Transaction::where('user_id', $user->id)
             ->when($accountId, function ($query) use ($accountId) {
@@ -29,17 +35,29 @@ class TransactionController extends Controller
                         ->orWhere('account_id', $accountId);
                 });
             })
+            ->when($reconciledFilter === 'yes', fn ($query) => $query->where('is_reconciled', true))
+            ->when($reconciledFilter === 'no', fn ($query) => $query->where('is_reconciled', false))
             ->whereBetween('date', [$start, $end])
             ->with(['fromAccount', 'toAccount', 'account', 'scheduledItem.recurringRule'])
             ->orderByDesc('date')
             ->orderByDesc('id')
             ->get();
 
+        $duplicateHashes = Transaction::where('user_id', $user->id)
+            ->whereNotNull('hash')
+            ->select('hash')
+            ->groupBy('hash')
+            ->havingRaw('count(*) > 1')
+            ->pluck('hash')
+            ->all();
+
         return view('transactions.index', [
             'transactions' => $transactions,
             'accounts' => $accounts,
             'month' => $start,
             'selectedAccountId' => $accountId,
+            'duplicateHashes' => $duplicateHashes,
+            'reconciledFilter' => $reconciledFilter,
         ]);
     }
 
@@ -69,6 +87,11 @@ class TransactionController extends Controller
         ]);
 
         $type = $validated['type'];
+        $date = Carbon::parse($validated['date']);
+
+        if ($this->monthLockService->isLocked($request->user(), $date)) {
+            return back()->withInput()->withErrors(['date' => 'This month is locked. Unlock it to add new entries.']);
+        }
 
         if ($type === 'income') {
             if (empty($validated['to_account_id'])) {
@@ -114,9 +137,44 @@ class TransactionController extends Controller
 
         $validated['user_id'] = $request->user()->id;
         $validated['currency'] = $validated['currency'] ?? 'USD';
+        $validated['source'] = 'manual';
 
         Transaction::create($validated);
 
         return redirect()->route('transactions.index')->with('success', 'Transaction recorded.');
+    }
+
+    public function bulkReconcile(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'transaction_ids' => ['required', 'array'],
+            'transaction_ids.*' => ['integer'],
+            'action' => ['required', 'in:reconcile,unreconcile'],
+        ]);
+
+        $transactions = Transaction::where('user_id', $request->user()->id)
+            ->whereIn('id', $validated['transaction_ids'])
+            ->get();
+
+        $skipped = 0;
+        foreach ($transactions as $transaction) {
+            if ($this->monthLockService->isLocked($request->user(), $transaction->date)) {
+                $skipped++;
+                continue;
+            }
+
+            $transaction->update([
+                'is_reconciled' => $validated['action'] === 'reconcile',
+                'reconciled_at' => $validated['action'] === 'reconcile' ? now() : null,
+            ]);
+        }
+
+        $message = $validated['action'] === 'reconcile' ? 'Transactions marked as reconciled.' : 'Transactions marked as unreconciled.';
+        if ($skipped > 0) {
+            $message .= ' Some entries were skipped due to locked months.';
+        }
+
+        return redirect()->route('transactions.index', $request->only(['month', 'account_id', 'reconciled']))
+            ->with('success', $message);
     }
 }
