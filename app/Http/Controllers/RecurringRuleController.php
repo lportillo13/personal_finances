@@ -23,7 +23,12 @@ class RecurringRuleController extends Controller
 
     public function create(Request $request): View
     {
-        return $this->formView(new RecurringRule(['start_date' => now()->toDateString(), 'next_run_on' => now()->toDateString()]), $request);
+        $rule = new RecurringRule([
+            'start_date' => now()->toDateString(),
+            'next_run_on' => now()->toDateString(),
+        ]);
+
+        return view('recurring_rules.create', ['rule' => $rule] + $this->formData());
     }
 
     public function store(Request $request): RedirectResponse
@@ -43,7 +48,7 @@ class RecurringRuleController extends Controller
     {
         $this->authorizeRule($recurringRule);
 
-        return $this->formView($recurringRule, $request);
+        return view('recurring_rules.edit', ['rule' => $recurringRule] + $this->formData());
     }
 
     public function update(Request $request, RecurringRule $recurringRule): RedirectResponse
@@ -65,14 +70,6 @@ class RecurringRuleController extends Controller
         $recurringRule->delete();
 
         return redirect()->route('recurring-rules.index')->with('status', 'Recurring rule deleted.');
-    }
-
-    protected function formView(RecurringRule $rule, Request $request): View
-    {
-        $accounts = Account::where('user_id', $request->user()->id)->orderBy('name')->get();
-        $categories = Category::where('user_id', $request->user()->id)->orderBy('name')->get();
-
-        return view('recurring_rules.form', compact('rule', 'accounts', 'categories'));
     }
 
     protected function validateData(Request $request): array
@@ -132,5 +129,13 @@ class RecurringRuleController extends Controller
     protected function authorizeRule(RecurringRule $recurringRule): void
     {
         abort_if($recurringRule->user_id !== auth()->id(), 403);
+    }
+
+    protected function formData(): array
+    {
+        $accounts = Account::where('user_id', auth()->id())->orderBy('name')->get();
+        $categories = Category::where('user_id', auth()->id())->orderBy('name')->get();
+
+        return compact('accounts', 'categories');
     }
 }
