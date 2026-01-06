@@ -1,9 +1,17 @@
 @extends('layouts.app')
 
+@section('title', 'Edit Credit Card')
+
 @section('content')
-<h1 class="h4 mb-3">Edit Credit Card</h1>
-<form method="POST" action="{{ route('credit-cards.update', $creditCard) }}" class="card card-body shadow-sm">
-    @method('PUT')
-    @include('credit_cards.form', ['creditCard' => $creditCard])
-</form>
+<div class="card shadow-sm">
+    <div class="card-header">
+        <h1 class="h5 mb-0">Edit Credit Card</h1>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ route('credit-cards.update', $creditCard) }}">
+            @method('PUT')
+            @include('credit_cards.form', ['creditCard' => $creditCard])
+        </form>
+    </div>
+</div>
 @endsection
