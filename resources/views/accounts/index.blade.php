@@ -25,7 +25,16 @@
                     <td>{{ $account->name }}</td>
                     <td class="text-capitalize">{{ str_replace('_', ' ', $account->type) }}</td>
                     <td>{{ $account->currency }}</td>
-                    <td>{{ $account->is_funding ? 'Yes' : 'No' }}</td>
+                    <td>
+                        @if ($account->is_funding)
+                            <span class="badge bg-success">Funding</span>
+                        @else
+                            <form action="{{ route('accounts.setFunding', $account) }}" method="POST" class="d-inline">
+                                @csrf
+                                <button class="btn btn-sm btn-outline-success" type="submit">Set Funding</button>
+                            </form>
+                        @endif
+                    </td>
                     <td>{{ $account->is_active ? 'Yes' : 'No' }}</td>
                     <td class="text-end">
                         <a href="{{ route('accounts.edit', $account) }}" class="btn btn-sm btn-outline-primary">Edit</a>

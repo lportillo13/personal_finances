@@ -24,24 +24,23 @@ class DashboardController extends Controller
 
         $items = ScheduledItem::where('user_id', $user->id)
             ->whereBetween('date', [$start, $end])
+            ->with(['recurringRule', 'category', 'account'])
             ->orderBy('date')
             ->get()
             ->groupBy(fn ($item) => $item->date->toDateString());
 
-        $incomeTotal = ScheduledItem::where('user_id', $user->id)
+        $totalsQuery = ScheduledItem::where('user_id', $user->id)
             ->whereBetween('date', [$start, $end])
-            ->where('kind', 'income')
-            ->sum('amount');
+            ->whereIn('kind', ['income', 'expense']);
 
-        $expenseTotal = ScheduledItem::where('user_id', $user->id)
-            ->whereBetween('date', [$start, $end])
-            ->where('kind', 'expense')
-            ->sum('amount');
+        $incomeTotal = (clone $totalsQuery)->where('kind', 'income')->sum('amount');
+        $expenseTotal = (clone $totalsQuery)->where('kind', 'expense')->sum('amount');
 
         return view('dashboard', [
             'groupedItems' => $items,
             'incomeTotal' => $incomeTotal,
             'expenseTotal' => $expenseTotal,
+            'netTotal' => $incomeTotal - $expenseTotal,
             'start' => $start,
             'end' => $end,
         ]);
