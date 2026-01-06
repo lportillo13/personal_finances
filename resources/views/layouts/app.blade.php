@@ -4,12 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', config('app.name', 'Laravel'))</title>
+    <link rel="icon" type="image/png" href="https://chatgpt.com/backend-api/estuary/content?id=file_00000000d50871f5a1b3c1e7041b1f69&ts=491038&p=fs&cid=1&sig=ecdfc83f62ad5e556c258cb4b44dd7574e6f18401f7f9c2e94ef3ab60a6d3039&v=0">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body class="bg-light">
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <div class="container">
-        <a class="navbar-brand" href="{{ url('/') }}">{{ config('app.name', 'Laravel') }}</a>
+        <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url('/') }}">
+            <img src="https://chatgpt.com/backend-api/estuary/content?id=file_00000000d50871f5a1b3c1e7041b1f69&ts=491038&p=fs&cid=1&sig=ecdfc83f62ad5e556c258cb4b44dd7574e6f18401f7f9c2e94ef3ab60a6d3039&v=0" alt="{{ config('app.name', 'Laravel') }} logo" height="32" class="rounded">
+            <span class="fw-semibold">{{ config('app.name', 'Laravel') }}</span>
+        </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
