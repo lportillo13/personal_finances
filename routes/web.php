@@ -69,6 +69,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/transactions/create', [TransactionController::class, 'create'])->name('transactions.create');
     Route::post('/transactions', [TransactionController::class, 'store'])->name('transactions.store');
     Route::post('/transactions/reconcile', [TransactionController::class, 'bulkReconcile'])->name('transactions.reconcile');
+    Route::delete('/transactions/{transaction}', [TransactionController::class, 'destroy'])->name('transactions.destroy');
 
     Route::get('/import', [ImportController::class, 'index'])->name('import.index');
     Route::post('/import/preview', [ImportController::class, 'preview'])->name('import.preview');
