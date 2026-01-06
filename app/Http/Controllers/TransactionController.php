@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Log;
 
 class TransactionController extends Controller
 {
@@ -93,17 +94,20 @@ class TransactionController extends Controller
         $fundingTypes = ['income', 'cash'];
 
         if ($this->monthLockService->isLocked($request->user(), $date)) {
+            $this->logTransactionIssue($request, 'Month is locked for new entries.', $validated);
             return back()->withInput()->withErrors(['date' => 'This month is locked. Unlock it to add new entries.']);
         }
 
         if ($type === 'income') {
             if (empty($validated['to_account_id'])) {
+                $this->logTransactionIssue($request, 'Income missing destination account.', $validated);
                 return back()->withInput()->withErrors(['to_account_id' => 'Select an account for this income.']);
             }
             $validated['from_account_id'] = null;
             $validated['account_id'] = null;
         } elseif ($type === 'expense') {
             if (empty($validated['from_account_id'])) {
+                $this->logTransactionIssue($request, 'Expense missing source account.', $validated);
                 return back()->withInput()->withErrors(['from_account_id' => 'Select a source account for this expense.']);
             }
             $validated['to_account_id'] = null;
@@ -117,20 +121,24 @@ class TransactionController extends Controller
             }
         } elseif ($type === 'transfer') {
             if (empty($validated['from_account_id']) || empty($validated['to_account_id'])) {
+                $this->logTransactionIssue($request, 'Transfer missing source or destination account.', $validated);
                 return back()->withInput()->withErrors(['to_account_id' => 'Transfers need both source and destination accounts.']);
             }
             if ($validated['from_account_id'] === $validated['to_account_id']) {
+                $this->logTransactionIssue($request, 'Transfer source and destination match.', $validated);
                 return back()->withInput()->withErrors(['to_account_id' => 'Source and destination cannot match.']);
             }
             $validated['account_id'] = null;
         } elseif ($type === 'credit_charge') {
             if (empty($validated['account_id'])) {
+                $this->logTransactionIssue($request, 'Credit charge missing credit card account.', $validated);
                 return back()->withInput()->withErrors(['account_id' => 'Choose the credit card for this charge.']);
             }
 
             $cardAccount = $accountsById->get((int) $validated['account_id']);
 
             if (! $cardAccount || $cardAccount->type !== 'credit_card') {
+                $this->logTransactionIssue($request, 'Credit charge not targeting credit card account.', $validated);
                 return back()->withInput()->withErrors(['account_id' => 'Select a credit card account for this charge.']);
             }
 
@@ -138,9 +146,11 @@ class TransactionController extends Controller
             $validated['to_account_id'] = null;
         } elseif ($type === 'credit_payment') {
             if (empty($validated['from_account_id']) || empty($validated['to_account_id'])) {
+                $this->logTransactionIssue($request, 'Credit payment missing funding account or card.', $validated);
                 return back()->withInput()->withErrors(['to_account_id' => 'Payments need a funding account and card.']);
             }
             if ($validated['from_account_id'] === $validated['to_account_id']) {
+                $this->logTransactionIssue($request, 'Credit payment funding and card match.', $validated);
                 return back()->withInput()->withErrors(['to_account_id' => 'Funding account and card must differ.']);
             }
 
@@ -148,16 +158,19 @@ class TransactionController extends Controller
             $cardAccount = $accountsById->get((int) $validated['to_account_id']);
 
             if (! $cardAccount || $cardAccount->type !== 'credit_card') {
+                $this->logTransactionIssue($request, 'Credit payment destination is not a credit card.', $validated);
                 return back()->withInput()->withErrors(['to_account_id' => 'Choose a credit card account to receive the payment.']);
             }
 
             if (! $fundingAccount || ! in_array($fundingAccount->type, $fundingTypes, true)) {
+                $this->logTransactionIssue($request, 'Credit payment funding account not cash or income.', $validated);
                 return back()->withInput()->withErrors(['from_account_id' => 'Funding account must be cash or income.']);
             }
 
             $validated['account_id'] = null;
         } elseif ($type === 'adjustment') {
             if (empty($validated['account_id'])) {
+                $this->logTransactionIssue($request, 'Adjustment missing account.', $validated);
                 return back()->withInput()->withErrors(['account_id' => 'Select an account to adjust.']);
             }
             $validated['from_account_id'] = null;
@@ -171,6 +184,16 @@ class TransactionController extends Controller
         Transaction::create($validated);
 
         return redirect()->route('transactions.index')->with('success', 'Transaction recorded.');
+    }
+
+    private function logTransactionIssue(Request $request, string $reason, array $validated): void
+    {
+        Log::warning('Transaction request blocked', [
+            'user_id' => $request->user()?->id,
+            'reason' => $reason,
+            'input' => $request->except(['_token']),
+            'validated' => $validated,
+        ]);
     }
 
     public function bulkReconcile(Request $request): RedirectResponse
