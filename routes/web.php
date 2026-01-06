@@ -34,6 +34,18 @@ Route::middleware('auth')->group(function () {
     Route::resource('accounts', AccountController::class)->except(['show']);
     Route::post('/accounts/{account}/set-funding', [AccountController::class, 'setFunding'])
         ->name('accounts.setFunding');
+    Route::get('/credit-cards/{account}', [CreditCardController::class, 'show'])
+        ->whereNumber('account')
+        ->name('credit-cards.show');
+    Route::get('/credit-cards/{account}/pay', [CreditCardController::class, 'payForm'])
+        ->whereNumber('account')
+        ->name('credit-cards.payForm');
+    Route::post('/credit-cards/{account}/pay', [CreditCardController::class, 'pay'])
+        ->whereNumber('account')
+        ->name('credit-cards.pay');
+    Route::post('/credit-cards/{account}/create-statement-payment', [CreditCardController::class, 'createStatementPayment'])
+        ->whereNumber('account')
+        ->name('credit-cards.createStatementPayment');
     Route::resource('credit-cards', CreditCardController::class)->except(['show']);
     Route::resource('categories', CategoryController::class)->except(['show']);
     Route::resource('recurring-rules', RecurringRuleController::class)->except(['show']);
