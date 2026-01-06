@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ScheduledItem;
+use App\Models\SavingsBucket;
 use App\Services\PaycheckAllocator;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -20,8 +21,6 @@ class PayPeriodController extends Controller
         $user = $request->user();
         $start = $request->filled('from') ? Carbon::parse($request->input('from')) : Carbon::today();
         $end = $request->filled('to') ? Carbon::parse($request->input('to')) : Carbon::today()->addDays(60);
-        $savingsPerPaycheck = (float) $request->input('savings', 0);
-
         if ($end->lt($start)) {
             [$start, $end] = [$end, $start];
         }
@@ -35,27 +34,32 @@ class PayPeriodController extends Controller
             ->with([
                 'recurringRule',
                 'category',
+                'savingsBucket',
                 'allocationsAsIncome.expenseItem.recurringRule',
                 'allocationsAsIncome.expenseItem.account',
                 'allocationsAsIncome.expenseItem.category',
+                'allocationsAsIncome.expenseItem.allocationsAsExpense',
             ])
             ->orderBy('date')
             ->get();
 
-        $unallocatedExpenses = ScheduledItem::where('user_id', $user->id)
+        $expenses = ScheduledItem::where('user_id', $user->id)
             ->whereBetween('date', [$start, $end])
             ->where('kind', 'expense')
-            ->whereDoesntHave('allocationAsExpense')
-            ->with(['recurringRule', 'account', 'category'])
+            ->with(['recurringRule', 'account', 'category', 'allocationsAsExpense'])
             ->orderBy('date')
             ->get();
+
+        $unallocatedExpenses = $expenses->filter(fn ($expense) => $this->allocator->getRemainingForExpense($expense) > 0);
+        $savingsTotal = $incomes->sum(fn ($income) => (float) ($income->savingsBucket->amount ?? 0));
 
         return view('pay-periods.index', [
             'incomes' => $incomes,
             'unallocatedExpenses' => $unallocatedExpenses,
             'start' => $start,
             'end' => $end,
-            'savingsPerPaycheck' => $savingsPerPaycheck,
+            'expenses' => $expenses,
+            'savingsTotal' => $savingsTotal,
         ]);
     }
 
@@ -64,19 +68,48 @@ class PayPeriodController extends Controller
         $validated = $request->validate([
             'from' => ['nullable', 'date'],
             'to' => ['nullable', 'date'],
+            'force_reallocate' => ['sometimes', 'boolean'],
         ]);
 
         $start = isset($validated['from']) ? Carbon::parse($validated['from']) : Carbon::today();
         $end = isset($validated['to']) ? Carbon::parse($validated['to']) : Carbon::today()->addDays(60);
+        $forceReallocate = $request->boolean('force_reallocate');
 
         if ($end->lt($start)) {
             [$start, $end] = [$end, $start];
         }
 
-        $summary = $this->allocator->allocateForUser($request->user(), $start, $end);
+        $summary = $this->allocator->allocateForUser($request->user(), $start, $end, $forceReallocate);
 
         return redirect()
             ->route('pay-periods.index', ['from' => $start->toDateString(), 'to' => $end->toDateString()])
             ->with('success', "Allocated {$summary['allocated']} expenses; {$summary['unallocated']} left unallocated.");
+    }
+
+    public function saveSavings(Request $request, ScheduledItem $income): RedirectResponse
+    {
+        if ($income->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'amount' => ['required', 'numeric', 'min:0'],
+            'note' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        SavingsBucket::updateOrCreate(
+            [
+                'user_id' => $request->user()->id,
+                'income_scheduled_item_id' => $income->id,
+            ],
+            [
+                'amount' => $validated['amount'],
+                'note' => $validated['note'] ?? null,
+            ]
+        );
+
+        return redirect()
+            ->route('pay-periods.index', $request->only('from', 'to'))
+            ->with('success', 'Savings updated for this paycheck.');
     }
 }
