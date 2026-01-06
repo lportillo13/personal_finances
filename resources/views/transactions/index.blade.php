@@ -63,6 +63,7 @@
                                 <th style="width: 22%">Accounts</th>
                                 <th>Memo</th>
                                 <th style="width: 16%">Linked Item</th>
+                                <th style="width: 12%">Actions</th>
                                 <th style="width: 16%">Status</th>
                             </tr>
                         </thead>
@@ -108,6 +109,16 @@
                                         @else
                                             <span class="text-muted">—</span>
                                         @endif
+                                    </td>
+                                    <td>
+                                        <form action="{{ route('transactions.destroy', $transaction) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this transaction?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <input type="hidden" name="month" value="{{ $month->format('Y-m') }}">
+                                            <input type="hidden" name="account_id" value="{{ $selectedAccountId }}">
+                                            <input type="hidden" name="reconciled" value="{{ $reconciledFilter }}">
+                                            <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+                                        </form>
                                     </td>
                                     <td>
                                         @if ($transaction->is_reconciled)
