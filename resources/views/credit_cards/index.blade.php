@@ -25,6 +25,13 @@
                         </div>
                     </div>
 
+                    @if (! is_null($card->current_amount))
+                        <div class="mb-2">
+                            <div class="small text-muted">Current Amount</div>
+                            <div class="fw-semibold">${{ number_format($card->current_amount, 2) }}</div>
+                        </div>
+                    @endif
+
                     @if($summary)
                         <div class="row g-2 mb-2">
                             <div class="col-md-4">

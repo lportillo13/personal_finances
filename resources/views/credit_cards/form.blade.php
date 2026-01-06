@@ -67,14 +67,28 @@
     </div>
 </div>
 <div class="row g-3 mt-1">
-    <div class="col-md-6">
+    <div class="col-md-4">
         <label class="form-label" for="minimum_payment">Minimum Payment</label>
         <input type="number" step="0.01" name="minimum_payment" id="minimum_payment" class="form-control @error('minimum_payment') is-invalid @enderror" value="{{ old('minimum_payment', $creditCard->minimum_payment ?? '') }}">
         @error('minimum_payment')
             <div class="invalid-feedback d-block">{{ $message }}</div>
         @enderror
     </div>
-    <div class="col-md-6">
+    <div class="col-md-4">
+        <label class="form-label" for="current_amount">Current Amount Due</label>
+        <input
+            type="number"
+            step="0.01"
+            name="current_amount"
+            id="current_amount"
+            class="form-control @error('current_amount') is-invalid @enderror"
+            value="{{ old('current_amount', $creditCard->current_amount ?? '') }}"
+        >
+        @error('current_amount')
+            <div class="invalid-feedback d-block">{{ $message }}</div>
+        @enderror
+    </div>
+    <div class="col-md-4">
         <div class="form-check">
             <input type="checkbox" name="autopay_enabled" class="form-check-input @error('autopay_enabled') is-invalid @enderror" id="autopay_enabled" value="1" @checked(old('autopay_enabled', $creditCard->autopay_enabled ?? false))>
             <label for="autopay_enabled" class="form-check-label">Autopay enabled</label>
