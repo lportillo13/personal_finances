@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Support\TransactionFingerprint;
+use Illuminate\Support\Carbon;
 
 class Transaction extends Model
 {
@@ -23,6 +25,12 @@ class Transaction extends Model
         'memo',
         'statement_period_start',
         'statement_period_end',
+        'external_id',
+        'source',
+        'imported_at',
+        'reconciled_at',
+        'is_reconciled',
+        'hash',
     ];
 
     protected $casts = [
@@ -30,7 +38,32 @@ class Transaction extends Model
         'amount' => 'decimal:2',
         'statement_period_start' => 'date',
         'statement_period_end' => 'date',
+        'imported_at' => 'datetime',
+        'reconciled_at' => 'datetime',
+        'is_reconciled' => 'boolean',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $transaction) {
+            if (empty($transaction->currency)) {
+                $transaction->currency = 'USD';
+            }
+
+            if (!$transaction->hash && $transaction->user_id && $transaction->date && $transaction->type && $transaction->amount) {
+                $transaction->hash = TransactionFingerprint::compute(
+                    (int) $transaction->user_id,
+                    Carbon::parse($transaction->date),
+                    (string) $transaction->type,
+                    (float) $transaction->amount,
+                    $transaction->from_account_id ? (int) $transaction->from_account_id : null,
+                    $transaction->to_account_id ? (int) $transaction->to_account_id : null,
+                    $transaction->account_id ? (int) $transaction->account_id : null,
+                    $transaction->memo
+                );
+            }
+        });
+    }
 
     public function user(): BelongsTo
     {

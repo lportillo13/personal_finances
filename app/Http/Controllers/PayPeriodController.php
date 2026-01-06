@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ScheduledItem;
 use App\Models\SavingsBucket;
 use App\Services\PaycheckAllocator;
+use App\Services\MonthLockService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -12,7 +13,7 @@ use Illuminate\View\View;
 
 class PayPeriodController extends Controller
 {
-    public function __construct(private PaycheckAllocator $allocator)
+    public function __construct(private PaycheckAllocator $allocator, private MonthLockService $monthLockService)
     {
     }
 
@@ -79,6 +80,15 @@ class PayPeriodController extends Controller
             [$start, $end] = [$end, $start];
         }
 
+        $monthCheck = $start->copy()->startOfMonth();
+        $endMonth = $end->copy()->startOfMonth();
+        while ($monthCheck <= $endMonth) {
+            if ($this->monthLockService->isLocked($request->user(), $monthCheck)) {
+                return back()->with('error', 'One or more months in this range are locked. Unlock them before reallocating.');
+            }
+            $monthCheck->addMonth();
+        }
+
         $summary = $this->allocator->allocateForUser($request->user(), $start, $end, $forceReallocate);
 
         return redirect()
@@ -90,6 +100,10 @@ class PayPeriodController extends Controller
     {
         if ($income->user_id !== $request->user()->id) {
             abort(403);
+        }
+
+        if ($this->monthLockService->isLocked($request->user(), $income->date)) {
+            return back()->with('error', 'This month is locked. Unlock it to update savings.');
         }
 
         $validated = $request->validate([

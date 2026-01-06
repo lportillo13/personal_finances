@@ -20,10 +20,12 @@
                     <li class="nav-item"><a class="nav-link" href="{{ route('pay-periods.index') }}">Pay Periods</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('calendar.index') }}">Calendar</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('transactions.index') }}">Transactions</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('import.index') }}">Import</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('accounts.index') }}">Accounts</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('credit-cards.index') }}">Credit Cards</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('categories.index') }}">Categories</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('recurring-rules.index') }}">Recurring Rules</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('locks.index') }}">Locks</a></li>
                 </ul>
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item"><span class="navbar-text me-3">{{ auth()->user()->name }}</span></li>
