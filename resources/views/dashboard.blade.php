@@ -18,7 +18,7 @@
     <div class="col-lg-3 col-md-6">
         <div class="card shadow-sm h-100">
             <div class="card-body">
-                <h5 class="card-title">Income (next 30 days)</h5>
+                <h5 class="card-title">Income ({{ $start->format('F Y') }})</h5>
                 <p class="display-6 text-success">${{ number_format($incomeTotal, 2) }}</p>
             </div>
         </div>
@@ -26,7 +26,7 @@
     <div class="col-lg-3 col-md-6">
         <div class="card shadow-sm h-100">
             <div class="card-body">
-                <h5 class="card-title">Expenses (next 30 days)</h5>
+                <h5 class="card-title">Expenses ({{ $start->format('F Y') }})</h5>
                 <p class="display-6 text-danger">${{ number_format($expenseTotal, 2) }}</p>
             </div>
         </div>

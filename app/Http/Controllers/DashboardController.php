@@ -19,8 +19,8 @@ class DashboardController extends Controller
         $user = $request->user();
         $this->categoryInitializer->ensureDefaults($user);
 
-        $start = Carbon::today();
-        $end = Carbon::today()->addDays(30);
+        $start = Carbon::today()->startOfMonth();
+        $end = Carbon::today()->endOfMonth();
 
         $items = ScheduledItem::where('user_id', $user->id)
             ->whereBetween('date', [$start, $end])
