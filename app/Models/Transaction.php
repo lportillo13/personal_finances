@@ -63,6 +63,22 @@ class Transaction extends Model
                 );
             }
         });
+
+        static::deleting(function (self $transaction) {
+            if (! $transaction->scheduled_item_id) {
+                return;
+            }
+
+            $scheduledItem = $transaction->scheduledItem()->first();
+
+            if (! $scheduledItem) {
+                return;
+            }
+
+            $scheduledItem->allocationsAsIncome()->delete();
+            $scheduledItem->allocationsAsExpense()->delete();
+            $scheduledItem->delete();
+        });
     }
 
     public function user(): BelongsTo
