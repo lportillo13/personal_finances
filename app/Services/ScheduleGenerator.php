@@ -55,7 +55,7 @@ class ScheduleGenerator
                 'source_account_id' => $rule->source_account_id,
                 'target_account_id' => $rule->target_account_id,
                 'category_id' => $rule->category_id,
-                'status' => 'pending',
+                'status' => ScheduledItem::pendingStatus(),
             ]);
 
             if ($item->wasRecentlyCreated) {

@@ -147,7 +147,7 @@ class RecurringRuleController extends Controller
     protected function syncPendingScheduledItems(RecurringRule $recurringRule): void
     {
         ScheduledItem::where('recurring_rule_id', $recurringRule->id)
-            ->where('status', 'pending')
+            ->whereIn('status', ScheduledItem::pendingStatuses())
             ->update([
                 'amount' => $recurringRule->amount,
                 'currency' => $recurringRule->currency,

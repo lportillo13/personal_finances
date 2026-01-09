@@ -79,7 +79,7 @@ class ScheduledItemStatusController extends Controller
         ]);
 
         $scheduledItem->update([
-            'status' => 'pending',
+            'status' => ScheduledItem::pendingStatus(),
             'paid_at' => null,
             'actual_amount' => null,
             'note' => $validated['note'] ?? $scheduledItem->note,
