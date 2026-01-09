@@ -184,21 +184,11 @@ class TransactionController extends Controller
 
         $transaction = Transaction::create($validated);
 
-        if ($transaction->type === 'credit_charge' && ! $transaction->scheduled_item_id) {
-            $scheduledItem = ScheduledItem::create([
-                'user_id' => $transaction->user_id,
-                'date' => $transaction->date,
-                'kind' => 'expense',
-                'amount' => $transaction->amount,
-                'currency' => $transaction->currency ?? 'USD',
-                'account_id' => $transaction->account_id,
-                'status' => 'paid',
-                'paid_at' => Carbon::now(),
-                'actual_amount' => $transaction->amount,
-                'note' => $transaction->memo,
-            ]);
-
-            $transaction->update(['scheduled_item_id' => $scheduledItem->id]);
+        if (! $transaction->scheduled_item_id) {
+            $scheduledItem = $this->createScheduledItemFromTransaction($transaction);
+            if ($scheduledItem) {
+                $transaction->update(['scheduled_item_id' => $scheduledItem->id]);
+            }
         }
 
         return redirect()->route('transactions.index')->with('success', 'Transaction recorded.');
@@ -212,6 +202,45 @@ class TransactionController extends Controller
             'input' => $request->except(['_token']),
             'validated' => $validated,
         ]);
+    }
+
+    private function createScheduledItemFromTransaction(Transaction $transaction): ?ScheduledItem
+    {
+        $type = $transaction->type;
+        $isTransfer = in_array($type, ['transfer', 'credit_payment'], true);
+        $isExpense = in_array($type, ['expense', 'credit_charge'], true);
+        $isIncome = $type === 'income';
+
+        if (! $isTransfer && ! $isExpense && ! $isIncome) {
+            return null;
+        }
+
+        $data = [
+            'user_id' => $transaction->user_id,
+            'date' => $transaction->date,
+            'amount' => $transaction->amount,
+            'currency' => $transaction->currency ?? 'USD',
+            'status' => 'paid',
+            'paid_at' => Carbon::now(),
+            'actual_amount' => $transaction->amount,
+            'note' => $transaction->memo,
+        ];
+
+        if ($isIncome) {
+            $data['kind'] = 'income';
+            $data['account_id'] = $transaction->to_account_id;
+        } elseif ($isExpense) {
+            $data['kind'] = 'expense';
+            $data['account_id'] = $type === 'credit_charge'
+                ? $transaction->account_id
+                : $transaction->from_account_id;
+        } else {
+            $data['kind'] = 'transfer';
+            $data['source_account_id'] = $transaction->from_account_id;
+            $data['target_account_id'] = $transaction->to_account_id;
+        }
+
+        return ScheduledItem::create($data);
     }
 
     public function bulkReconcile(Request $request): RedirectResponse
