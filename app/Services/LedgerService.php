@@ -99,7 +99,9 @@ class LedgerService
             ->where($queryScope)
             ->sum('amount');
 
-        return (float) ($incoming - $outgoing);
+        $startingBalance = (float) ($account->current_amount ?? 0);
+
+        return (float) ($startingBalance + $incoming - $outgoing);
     }
 
     public function computeCreditCardBalance(Account $creditCardAccount, ?Carbon $asOf = null): float
