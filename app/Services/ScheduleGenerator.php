@@ -10,6 +10,10 @@ use Illuminate\Support\Collection;
 
 class ScheduleGenerator
 {
+    public function __construct(private LedgerService $ledgerService)
+    {
+    }
+
     public function generateForUser(User $user, Carbon $start, Carbon $end): int
     {
         $created = 0;
@@ -33,6 +37,7 @@ class ScheduleGenerator
 
         $created = 0;
         $occurrences = $this->buildOccurrences($rule, $start, $end);
+        $user = $rule->user ?? $rule->user()->first();
 
         foreach ($occurrences as $date) {
             if ($rule->end_date && $date->gt($rule->end_date)) {
@@ -63,10 +68,14 @@ class ScheduleGenerator
                 if ($rule->occurrences_remaining !== null) {
                     $rule->occurrences_remaining = max(0, $rule->occurrences_remaining - 1);
                 }
+                if ($user) {
+                    $this->ledgerService->recordFromScheduledItem($user, $item);
+                }
             }
         }
 
-        $nextDate = $this->nextOccurrenceAfter($rule, $end);
+        $anchorDate = $occurrences->last() ? Carbon::parse($occurrences->last()->toDateString()) : $end;
+        $nextDate = $this->nextOccurrenceAfter($rule, $anchorDate);
 
         $rule->next_run_on = $nextDate ?? $rule->next_run_on;
         $rule->save();
@@ -82,6 +91,10 @@ class ScheduleGenerator
             $start,
         ])->max();
 
+        if ($rule->occurrences_remaining !== null) {
+            return $this->buildOccurrencesByCount($rule, $first);
+        }
+
         return match ($rule->frequency) {
             'weekly' => $this->generateWeekly($rule, $first, $end, 7 * $rule->interval),
             'biweekly' => $this->generateWeekly($rule, $first, $end, 14 * $rule->interval),
@@ -89,6 +102,44 @@ class ScheduleGenerator
             'semimonthly' => $this->generateSemimonthly($rule, $first, $end),
             default => collect(),
         };
+    }
+
+    protected function buildOccurrencesByCount(RecurringRule $rule, Carbon $start): Collection
+    {
+        $dates = collect();
+        $remaining = $rule->occurrences_remaining;
+
+        if (! $remaining || $remaining <= 0) {
+            return $dates;
+        }
+
+        $current = Carbon::parse($rule->next_run_on);
+        if ($current->lt($start)) {
+            $next = $this->nextOccurrenceAfter($rule, $start->copy()->subDay());
+            if (! $next) {
+                return $dates;
+            }
+            $current = Carbon::parse($next);
+        }
+
+        while ($remaining > 0) {
+            if ($rule->end_date && $current->gt($rule->end_date)) {
+                break;
+            }
+
+            if ($current->gte($rule->start_date)) {
+                $dates->push($current->copy());
+                $remaining--;
+            }
+
+            $next = $this->nextOccurrenceAfter($rule, $current);
+            if (! $next) {
+                break;
+            }
+            $current = Carbon::parse($next);
+        }
+
+        return $dates;
     }
 
     protected function generateWeekly(RecurringRule $rule, Carbon $start, Carbon $end, int $stepDays): Collection
