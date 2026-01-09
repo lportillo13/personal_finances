@@ -34,7 +34,7 @@ class RecurringRuleController extends Controller
         return view('recurring_rules.create', ['rule' => $rule] + $this->formData());
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, ScheduleGenerator $generator): RedirectResponse
     {
         $data = $this->validateData($request);
 
@@ -42,7 +42,13 @@ class RecurringRuleController extends Controller
         $data['next_run_on'] = $data['next_run_on'] ?? $data['start_date'];
         $data['occurrences_remaining'] = $data['occurrences_remaining'] ?? $data['occurrences_total'];
 
-        RecurringRule::create($data);
+        $rule = RecurringRule::create($data);
+
+        $generator->generateForRule(
+            $rule,
+            Carbon::today(),
+            Carbon::today()->addDays(90)
+        );
 
         return redirect()->route('recurring-rules.index')->with('status', 'Recurring rule created.');
     }

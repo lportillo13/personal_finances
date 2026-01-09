@@ -44,7 +44,7 @@
                             <tr>
                                 <td><span class="badge {{ $badgeClass }}">{{ ucfirst($item->kind) }}</span></td>
                                 <td>
-                                    <div class="fw-semibold">{{ $item->recurringRule?->name ?? 'Scheduled Item' }}</div>
+                                    <div class="fw-semibold">{{ $item->recurringRule?->name ?? $item->notes ?? $item->note ?? 'Scheduled Item' }}</div>
                                     @if ($item->category)
                                         <span class="badge rounded-pill" style="background-color: {{ $item->category->color ?? '#6c757d' }}">{{ $item->category->name }}</span>
                                     @endif
