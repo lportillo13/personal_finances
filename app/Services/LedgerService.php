@@ -137,7 +137,7 @@ class LedgerService
     protected function scheduledBaseQuery(Account $account, ?string $asOfDate)
     {
         return ScheduledItem::where('user_id', $account->user_id)
-            ->where('status', 'pending')
+            ->whereIn('status', ScheduledItem::pendingStatuses())
             ->whereDoesntHave('transaction')
             ->when($asOfDate, fn ($query) => $query->whereDate('date', '<=', $asOfDate));
     }

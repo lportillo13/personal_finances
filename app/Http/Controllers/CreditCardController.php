@@ -327,7 +327,7 @@ class CreditCardController extends Controller
             'source_account_id' => $fundingAccount?->id,
             'target_account_id' => $cardAccount->id,
             'category_id' => $category->id,
-            'status' => 'pending',
+            'status' => ScheduledItem::pendingStatus(),
             'note' => 'Statement payment',
         ]);
 

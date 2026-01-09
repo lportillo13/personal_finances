@@ -7,11 +7,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Schema;
 use App\Models\SavingsBucket;
 
 class ScheduledItem extends Model
 {
     use HasFactory;
+
+    public const STATUS_PENDING = 'pending';
+    public const STATUS_PLANNED = 'planned';
 
     protected $fillable = [
         'user_id',
@@ -86,5 +90,17 @@ class ScheduledItem extends Model
     public function transaction(): HasOne
     {
         return $this->hasOne(Transaction::class);
+    }
+
+    public static function pendingStatus(): string
+    {
+        return Schema::hasColumn('scheduled_items', 'paid_at')
+            ? self::STATUS_PENDING
+            : self::STATUS_PLANNED;
+    }
+
+    public static function pendingStatuses(): array
+    {
+        return [self::STATUS_PENDING, self::STATUS_PLANNED];
     }
 }
