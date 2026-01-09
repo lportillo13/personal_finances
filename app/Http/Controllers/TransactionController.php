@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Account;
+use App\Models\Category;
+use App\Models\CreditCard;
 use App\Models\ScheduledItem;
 use App\Models\Transaction;
+use App\Services\CardCycleService;
 use App\Services\MonthLockService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -15,8 +18,10 @@ use Illuminate\Support\Facades\Log;
 
 class TransactionController extends Controller
 {
-    public function __construct(private MonthLockService $monthLockService)
-    {
+    public function __construct(
+        private MonthLockService $monthLockService,
+        private CardCycleService $cardCycleService
+    ) {
     }
 
     public function index(Request $request): View
@@ -184,6 +189,13 @@ class TransactionController extends Controller
 
         $transaction = Transaction::create($validated);
 
+        if ($transaction->type === 'credit_charge') {
+            $cardAccount = $accountsById->get((int) $transaction->account_id);
+            if ($cardAccount) {
+                $this->scheduleCreditCardPayment($transaction, $cardAccount);
+            }
+        }
+
         if (! $transaction->scheduled_item_id) {
             $scheduledItem = $this->createScheduledItemFromTransaction($transaction);
             if ($scheduledItem) {
@@ -241,6 +253,83 @@ class TransactionController extends Controller
         }
 
         return ScheduledItem::create($data);
+    }
+
+    private function scheduleCreditCardPayment(Transaction $transaction, Account $cardAccount): void
+    {
+        $cardAccount->loadMissing('creditCard');
+        $creditCard = $cardAccount->creditCard;
+
+        if (! $creditCard) {
+            return;
+        }
+
+        $fundingAccount = $this->resolveFundingAccount($transaction->user_id, $creditCard);
+
+        if (! $fundingAccount) {
+            return;
+        }
+
+        $cycle = $this->cardCycleService->getCurrentCycle($cardAccount, Carbon::parse($transaction->date));
+        $dueDate = $cycle['due_date']->toDateString();
+
+        $scheduledItem = ScheduledItem::where('user_id', $transaction->user_id)
+            ->where('kind', 'transfer')
+            ->whereDate('date', $dueDate)
+            ->where('target_account_id', $cardAccount->id)
+            ->whereIn('status', ScheduledItem::pendingStatuses())
+            ->first();
+
+        $amount = (float) $transaction->amount;
+
+        if ($scheduledItem) {
+            $scheduledItem->update([
+                'amount' => (float) $scheduledItem->amount + $amount,
+                'source_account_id' => $fundingAccount->id,
+            ]);
+
+            return;
+        }
+
+        $category = Category::firstOrCreate(
+            ['user_id' => $transaction->user_id, 'name' => 'Credit Card Payment'],
+            ['kind' => 'expense']
+        );
+
+        ScheduledItem::create([
+            'user_id' => $transaction->user_id,
+            'date' => $dueDate,
+            'kind' => 'transfer',
+            'amount' => $amount,
+            'currency' => $transaction->currency ?? 'USD',
+            'source_account_id' => $fundingAccount->id,
+            'target_account_id' => $cardAccount->id,
+            'category_id' => $category->id,
+            'status' => ScheduledItem::pendingStatus(),
+            'note' => 'Estimated card payment',
+        ]);
+    }
+
+    private function resolveFundingAccount(int $userId, CreditCard $creditCard): ?Account
+    {
+        $account = null;
+
+        if ($creditCard->default_funding_account_id) {
+            $account = Account::where('user_id', $userId)
+                ->where('id', $creditCard->default_funding_account_id)
+                ->whereIn('type', ['income', 'cash'])
+                ->first();
+        }
+
+        if (! $account) {
+            $account = Account::where('user_id', $userId)
+                ->whereIn('type', ['income', 'cash'])
+                ->orderBy('is_funding', 'desc')
+                ->orderBy('name')
+                ->first();
+        }
+
+        return $account;
     }
 
     public function bulkReconcile(Request $request): RedirectResponse
