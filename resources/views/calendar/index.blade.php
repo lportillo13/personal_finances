@@ -77,7 +77,6 @@
                             <div class="small text-success mt-2">Income: ${{ number_format($incomeTotal, 2) }}</div>
                             <div class="small text-danger">Expenses: ${{ number_format($expenseTotal, 2) }}</div>
                             @if ($fundingAccount)
-                                <div class="small text-danger">Debit ({{ $fundingAccount->name }}) total: ${{ number_format($fundingExpenseTotal, 2) }}</div>
                                 @if ($fundingBalance !== null)
                                     <div class="small text-muted">Debit balance: ${{ number_format($fundingBalance, 2) }}</div>
                                 @endif
