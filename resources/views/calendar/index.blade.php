@@ -40,6 +40,11 @@
                             $dayItems = $items->get($dateKey, collect());
                             $incomeTotal = $dayItems->where('kind', 'income')->sum('amount');
                             $expenseTotal = $dayItems->where('kind', 'expense')->sum('amount');
+                            $fundingExpenseTotal = $fundingAccount
+                                ? $dayItems->filter(fn ($item) => ($item->kind === 'expense' || $item->category?->kind === 'expense')
+                                    && $item->account_id === $fundingAccount->id)->sum('amount')
+                                : 0;
+                            $fundingBalance = $fundingAccount ? ($fundingBalances[$dateKey] ?? null) : null;
                             $isToday = $day->isToday();
                         @endphp
                         <td class="align-top" style="min-width: 180px;">
@@ -71,6 +76,14 @@
                             @endif
                             <div class="small text-success mt-2">Income: ${{ number_format($incomeTotal, 2) }}</div>
                             <div class="small text-danger">Expenses: ${{ number_format($expenseTotal, 2) }}</div>
+                            @if ($fundingAccount)
+                                <div class="small text-danger">Debit ({{ $fundingAccount->name }}) total: ${{ number_format($fundingExpenseTotal, 2) }}</div>
+                                @if ($fundingBalance !== null)
+                                    <div class="small text-muted">Debit balance: ${{ number_format($fundingBalance, 2) }}</div>
+                                @endif
+                            @else
+                                <div class="small text-muted">Set a funding account to see debit totals.</div>
+                            @endif
                         </td>
                     @endforeach
                 </tr>
