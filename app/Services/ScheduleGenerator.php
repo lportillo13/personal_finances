@@ -19,45 +19,57 @@ class ScheduleGenerator
             ->get();
 
         foreach ($rules as $rule) {
-            $occurrences = $this->buildOccurrences($rule, $start, $end);
+            $created += $this->generateForRule($rule, $start, $end);
+        }
 
-            foreach ($occurrences as $date) {
-                if ($rule->end_date && $date->gt($rule->end_date)) {
-                    continue;
-                }
+        return $created;
+    }
 
-                if ($rule->occurrences_remaining !== null && $rule->occurrences_remaining <= 0) {
-                    break;
-                }
+    public function generateForRule(RecurringRule $rule, Carbon $start, Carbon $end): int
+    {
+        if (! $rule->is_active) {
+            return 0;
+        }
 
-                $item = ScheduledItem::firstOrCreate([
-                    'user_id' => $rule->user_id,
-                    'recurring_rule_id' => $rule->id,
-                    'date' => $date->toDateString(),
-                    'amount' => $rule->amount,
-                    'kind' => $rule->kind,
-                ], [
-                    'currency' => $rule->currency,
-                    'account_id' => $rule->account_id,
-                    'source_account_id' => $rule->source_account_id,
-                    'target_account_id' => $rule->target_account_id,
-                    'category_id' => $rule->category_id,
-                    'status' => 'pending',
-                ]);
+        $created = 0;
+        $occurrences = $this->buildOccurrences($rule, $start, $end);
 
-                if ($item->wasRecentlyCreated) {
-                    $created++;
-                    if ($rule->occurrences_remaining !== null) {
-                        $rule->occurrences_remaining = max(0, $rule->occurrences_remaining - 1);
-                    }
-                }
+        foreach ($occurrences as $date) {
+            if ($rule->end_date && $date->gt($rule->end_date)) {
+                continue;
             }
 
-            $nextDate = $this->nextOccurrenceAfter($rule, $end);
+            if ($rule->occurrences_remaining !== null && $rule->occurrences_remaining <= 0) {
+                break;
+            }
 
-            $rule->next_run_on = $nextDate ?? $rule->next_run_on;
-            $rule->save();
+            $item = ScheduledItem::firstOrCreate([
+                'user_id' => $rule->user_id,
+                'recurring_rule_id' => $rule->id,
+                'date' => $date->toDateString(),
+                'amount' => $rule->amount,
+                'kind' => $rule->kind,
+            ], [
+                'currency' => $rule->currency,
+                'account_id' => $rule->account_id,
+                'source_account_id' => $rule->source_account_id,
+                'target_account_id' => $rule->target_account_id,
+                'category_id' => $rule->category_id,
+                'status' => 'pending',
+            ]);
+
+            if ($item->wasRecentlyCreated) {
+                $created++;
+                if ($rule->occurrences_remaining !== null) {
+                    $rule->occurrences_remaining = max(0, $rule->occurrences_remaining - 1);
+                }
+            }
         }
+
+        $nextDate = $this->nextOccurrenceAfter($rule, $end);
+
+        $rule->next_run_on = $nextDate ?? $rule->next_run_on;
+        $rule->save();
 
         return $created;
     }

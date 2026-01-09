@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\Account;
 use App\Models\Category;
 use App\Models\RecurringRule;
+use App\Models\ScheduledItem;
+use App\Services\ScheduleGenerator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 
 class RecurringRuleController extends Controller
@@ -51,7 +54,11 @@ class RecurringRuleController extends Controller
         return view('recurring_rules.edit', ['rule' => $recurringRule] + $this->formData());
     }
 
-    public function update(Request $request, RecurringRule $recurringRule): RedirectResponse
+    public function update(
+        Request $request,
+        RecurringRule $recurringRule,
+        ScheduleGenerator $generator
+    ): RedirectResponse
     {
         $this->authorizeRule($recurringRule);
 
@@ -59,6 +66,12 @@ class RecurringRuleController extends Controller
         $data['occurrences_remaining'] = $data['occurrences_remaining'] ?? $recurringRule->occurrences_remaining;
 
         $recurringRule->update($data);
+        $this->syncPendingScheduledItems($recurringRule);
+        $generator->generateForRule(
+            $recurringRule,
+            Carbon::today(),
+            Carbon::today()->addDays(90)
+        );
 
         return redirect()->route('recurring-rules.index')->with('status', 'Recurring rule updated.');
     }
@@ -129,6 +142,21 @@ class RecurringRuleController extends Controller
     protected function authorizeRule(RecurringRule $recurringRule): void
     {
         abort_if($recurringRule->user_id !== auth()->id(), 403);
+    }
+
+    protected function syncPendingScheduledItems(RecurringRule $recurringRule): void
+    {
+        ScheduledItem::where('recurring_rule_id', $recurringRule->id)
+            ->where('status', 'pending')
+            ->update([
+                'amount' => $recurringRule->amount,
+                'currency' => $recurringRule->currency,
+                'kind' => $recurringRule->kind,
+                'account_id' => $recurringRule->account_id,
+                'source_account_id' => $recurringRule->source_account_id,
+                'target_account_id' => $recurringRule->target_account_id,
+                'category_id' => $recurringRule->category_id,
+            ]);
     }
 
     protected function formData(): array
