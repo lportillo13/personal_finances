@@ -99,9 +99,12 @@ class LedgerService
             ->where($queryScope)
             ->sum('amount');
 
+        $scheduledIncoming = $this->scheduledIncomingForAccount($account, $asOfDate);
+        $scheduledOutgoing = $this->scheduledOutgoingForAccount($account, $asOfDate);
+
         $startingBalance = (float) ($account->current_amount ?? 0);
 
-        return (float) ($startingBalance + $incoming - $outgoing);
+        return (float) ($startingBalance + $incoming + $scheduledIncoming - $outgoing - $scheduledOutgoing);
     }
 
     public function computeCreditCardBalance(Account $creditCardAccount, ?Carbon $asOf = null): float
@@ -125,6 +128,63 @@ class LedgerService
             ->where($queryScope)
             ->sum('amount');
 
-        return (float) ($charges - $payments);
+        $scheduledCharges = $this->scheduledCreditCharges($creditCardAccount, $asOfDate);
+        $scheduledPayments = $this->scheduledCreditPayments($creditCardAccount, $asOfDate);
+
+        return (float) ($charges + $scheduledCharges - $payments - $scheduledPayments);
+    }
+
+    protected function scheduledBaseQuery(Account $account, ?string $asOfDate)
+    {
+        return ScheduledItem::where('user_id', $account->user_id)
+            ->where('status', 'pending')
+            ->whereDoesntHave('transaction')
+            ->when($asOfDate, fn ($query) => $query->whereDate('date', '<=', $asOfDate));
+    }
+
+    protected function scheduledIncomingForAccount(Account $account, ?string $asOfDate): float
+    {
+        return (float) $this->scheduledBaseQuery($account, $asOfDate)
+            ->where(function ($query) use ($account) {
+                $query->where(function ($query) use ($account) {
+                    $query->where('kind', 'income')
+                        ->where('account_id', $account->id);
+                })->orWhere(function ($query) use ($account) {
+                    $query->where('kind', 'transfer')
+                        ->where('target_account_id', $account->id);
+                });
+            })
+            ->sum('amount');
+    }
+
+    protected function scheduledOutgoingForAccount(Account $account, ?string $asOfDate): float
+    {
+        return (float) $this->scheduledBaseQuery($account, $asOfDate)
+            ->where(function ($query) use ($account) {
+                $query->where(function ($query) use ($account) {
+                    $query->where('kind', 'expense')
+                        ->where('account_id', $account->id);
+                })->orWhere(function ($query) use ($account) {
+                    $query->where('kind', 'transfer')
+                        ->where('source_account_id', $account->id);
+                });
+            })
+            ->sum('amount');
+    }
+
+    protected function scheduledCreditCharges(Account $creditCardAccount, ?string $asOfDate): float
+    {
+        return (float) $this->scheduledBaseQuery($creditCardAccount, $asOfDate)
+            ->where('kind', 'expense')
+            ->where('account_id', $creditCardAccount->id)
+            ->sum('amount');
+    }
+
+    protected function scheduledCreditPayments(Account $creditCardAccount, ?string $asOfDate): float
+    {
+        return (float) $this->scheduledBaseQuery($creditCardAccount, $asOfDate)
+            ->where('kind', 'transfer')
+            ->where('target_account_id', $creditCardAccount->id)
+            ->sum('amount');
     }
 }
