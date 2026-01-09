@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Account;
+use App\Models\ScheduledItem;
 use App\Models\Transaction;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -88,7 +89,10 @@ class CardCycleService
             ->where($scope)
             ->sum('amount');
 
-        return (float) ($charges - $payments);
+        $scheduledCharges = $this->scheduledCharges($cardAccount, $asOfDate);
+        $scheduledPayments = $this->scheduledPayments($cardAccount, $asOfDate);
+
+        return (float) ($charges + $scheduledCharges - $payments - $scheduledPayments);
     }
 
     protected function getCard(Account $cardAccount)
@@ -118,5 +122,29 @@ class CardCycleService
         $clampedDay = min($day, $date->daysInMonth);
 
         return $date->copy()->day($clampedDay);
+    }
+
+    protected function scheduledCharges(Account $cardAccount, ?string $asOfDate): float
+    {
+        return (float) $this->scheduledBaseQuery($cardAccount, $asOfDate)
+            ->where('kind', 'expense')
+            ->where('account_id', $cardAccount->id)
+            ->sum('amount');
+    }
+
+    protected function scheduledPayments(Account $cardAccount, ?string $asOfDate): float
+    {
+        return (float) $this->scheduledBaseQuery($cardAccount, $asOfDate)
+            ->where('kind', 'transfer')
+            ->where('target_account_id', $cardAccount->id)
+            ->sum('amount');
+    }
+
+    protected function scheduledBaseQuery(Account $cardAccount, ?string $asOfDate)
+    {
+        return ScheduledItem::where('user_id', $cardAccount->user_id)
+            ->whereIn('status', ScheduledItem::pendingStatuses())
+            ->whereDoesntHave('transaction')
+            ->when($asOfDate, fn ($query) => $query->whereDate('date', '<=', $asOfDate));
     }
 }
